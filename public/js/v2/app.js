@@ -11,7 +11,7 @@ const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': 
 const tr = value => esc(t(value));
 const $ = s => document.querySelector(s);
 const routeLink = (url, name) => `<a href="${url}" class="${path === url ? 'active' : ''}" ${path === url ? 'aria-current="page"' : ''}>${tr(name)}</a>`;
-let user, config, products = [], cart = [], socket, map, marker, driverMarker, activeOrder, gpsTimer, scanner, soundContext, pushSdk, toastTimer, installPrompt;
+let user, config, products = [], cart = [], socket, map, marker, driverMarker, activeOrder, gpsTimer, scanner, soundContext, pushSdk, pushReady = false, toastTimer, installPrompt;
 try { cart = JSON.parse(localStorage.getItem('bella_cart_v2') || '[]'); if (!Array.isArray(cart)) cart = []; } catch { cart = []; }
 function toast(message) { clearTimeout(toastTimer); $('#toast').textContent = t(message); $('#toast').classList.add('show'); toastTimer = setTimeout(() => $('#toast').classList.remove('show'), 4500); }
 function saveCart() {
@@ -89,18 +89,18 @@ function renderNav() {
   $('#navigation').innerHTML = nav;
   arrangeHeaderTools();
   const signInLink = $('#signin-link');
-  signInLink.hidden = Boolean(user);
+  signInLink.hidden = true;
   signInLink.setAttribute('aria-label', t('Sign in'));
   signInLink.title = t('Sign in');
   $('#signin-label').textContent = t('Sign in');
   const accountMenu = $('#account-menu');
   const accountToggle = $('#account-toggle');
   const accountPopover = $('#account-popover');
-  accountMenu.hidden = !user;
+  accountMenu.hidden = false;
   accountToggle.setAttribute('aria-label', accountLabel('My account'));
   accountToggle.title = accountLabel('My account');
   accountPopover.setAttribute('aria-label', accountLabel('Account menu'));
-  if (user) {
+  {
     const dashboards = [
       ...(hasRole('admin') ? [['/admin', 'Admin dashboard'], ['/kitchen', 'Kitchen dashboard']] : []),
       ...(!hasRole('admin') && hasRole('kitchen') ? [['/kitchen', 'Kitchen dashboard']] : []),
@@ -109,10 +109,11 @@ function renderNav() {
     ];
     const roleNames = { customer: 'Customer', admin: 'Administrator', owner: 'Owner', kitchen: 'Kitchen', driver: 'Driver' };
     const roleLabel = assignedRoles.map(role => roleNames[role]).filter(Boolean).map(accountLabel).join(' · ');
-    accountPopover.innerHTML = `<div class="account-identity"><span class="account-avatar" aria-hidden="true">${esc((user.name || user.email || '?').trim().charAt(0).toUpperCase())}</span><div class="account-identity-copy"><strong>${accountLabel('My account')}</strong><span class="account-email">${esc(user.email || '')}</span>${roleLabel ? `<span class="account-role">${esc(roleLabel)}</span>` : ''}</div></div><div class="account-links"><a href="/orders">${accountLabel('My orders')}</a>${dashboards.length ? `<div class="account-section-title">${accountLabel('My dashboards')}</div>${dashboards.map(([href, label]) => `<a href="${href}">${accountLabel(label)}</a>`).join('')}` : ''}<button class="account-signout" id="logout" type="button">${accountLabel('Sign out')}</button></div>`;
+    const identity = user ? `<div class="account-identity"><span class="account-avatar" aria-hidden="true">${esc((user.name || user.email || '?').trim().charAt(0).toUpperCase())}</span><div class="account-identity-copy"><strong>${accountLabel('My account')}</strong><span class="account-email">${esc(user.email || '')}</span>${roleLabel ? `<span class="account-role">${esc(roleLabel)}</span>` : ''}</div></div>` : '';
+    const accountLinks = user ? `<div class="account-links"><a href="/orders">${accountLabel('My orders')}</a>${dashboards.length ? `<div class="account-section-title">${accountLabel('My dashboards')}</div>${dashboards.map(([href, label]) => `<a href="${href}">${accountLabel(label)}</a>`).join('')}` : ''}</div>` : `<a class="account-login" href="/login">${accountLabel('Sign in')}</a>`;
+    accountPopover.innerHTML = `${identity}${accountLinks}<div class="account-notifications"><div><strong>${accountLabel('Notifications')}</strong><small id="notification-state"></small></div><button type="button" data-notification-toggle aria-pressed="false"></button></div>${user ? `<button class="account-signout" id="logout" type="button">${accountLabel('Sign out')}</button>` : ''}`;
     accountPopover.hidden = !accountToggle.getAttribute('aria-expanded') || accountToggle.getAttribute('aria-expanded') === 'false';
-  } else {
-    accountPopover.hidden = true;
+    updateNotificationPreference();
   }
   $('#language-label').textContent = language === 'en' ? 'عربي' : 'EN';
   $('#language').setAttribute('aria-label', language === 'en' ? 'Switch to Arabic' : 'Switch to English');
@@ -133,9 +134,23 @@ function accountLabel(value) {
     'My orders': '\u0637\u0644\u0628\u0627\u062a\u064a', 'My dashboards': '\u0644\u0648\u062d\u0627\u062a\u064a',
     'Admin dashboard': '\u0644\u0648\u062d\u0629 \u0627\u0644\u0625\u062f\u0627\u0631\u0629', 'Kitchen dashboard': '\u0644\u0648\u062d\u0629 \u0627\u0644\u0645\u0637\u0628\u062e',
     'Delivery dashboard': '\u0644\u0648\u062d\u0629 \u0627\u0644\u062a\u0648\u0635\u064a\u0644', 'Administrator': '\u0645\u062f\u064a\u0631',
-    'Kitchen': '\u0627\u0644\u0645\u0637\u0628\u062e', 'Driver': '\u0645\u0646\u062f\u0648\u0628', 'Sign out': '\u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062e\u0631\u0648\u062c'
+    'Kitchen': '\u0627\u0644\u0645\u0637\u0628\u062e', 'Driver': '\u0645\u0646\u062f\u0648\u0628', 'Sign out': '\u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062e\u0631\u0648\u062c',
+    'Notifications': '\u0627\u0644\u0625\u0634\u0639\u0627\u0631\u0627\u062a', 'Sign in': '\u062a\u0633\u062c\u064a\u0644 \u0627\u0644\u062f\u062e\u0648\u0644', 'On': '\u0645\u0641\u0639\u0651\u0644\u0629', 'Off': '\u0645\u062a\u0648\u0642\u0641\u0629', 'Enable': '\u062a\u0634\u063a\u064a\u0644', 'Disable': '\u0625\u064a\u0642\u0627\u0641', 'Blocked': '\u0645\u062d\u0638\u0648\u0631\u0629', 'Unavailable': '\u063a\u064a\u0631 \u0645\u062a\u0627\u062d\u0629', 'Loading': '\u062c\u0627\u0631\u064a \u0627\u0644\u062a\u062d\u0645\u064a\u0644'
   };
   return labels[value] || tr(value);
+}
+function updateNotificationPreference() {
+  const state = $('#notification-state'), button = $('[data-notification-toggle]');
+  if (!state || !button) return;
+  const permission = 'Notification' in window ? Notification.permission : 'unsupported';
+  const subscription = pushSdk?.User?.PushSubscription;
+  const enabled = permission === 'granted' && Boolean(subscription?.optedIn);
+  const configured = Boolean(config?.oneSignalAppId) && oneSignalOriginMatchesPage();
+  const unavailable = permission === 'unsupported' || (pushReady && !pushSdk) || !configured;
+  state.textContent = permission === 'denied' ? accountLabel('Blocked') : unavailable ? accountLabel('Unavailable') : pushReady ? accountLabel(enabled ? 'On' : 'Off') : accountLabel('Loading');
+  button.textContent = permission === 'denied' ? accountLabel('Blocked') : unavailable ? accountLabel('Unavailable') : enabled ? accountLabel('Disable') : accountLabel('Enable');
+  button.setAttribute('aria-pressed', String(enabled));
+  button.disabled = permission === 'unsupported' || unavailable || !pushReady;
 }
 function addressFields(a = {}) {
   return `${field('label', 'Label', a.label || 'Home')}${field('address_line', 'Street and building', a.address_line)}${field('phone', 'Phone', a.phone, 'tel')}<div class="fields address-extra-fields"><div class="address-field">${field('landmark', 'Landmark', a.landmark, 'text', false)}</div><div class="address-field">${field('floor', 'Floor', a.floor, 'text', false)}</div><div class="address-field">${field('apartment', 'Apartment', a.apartment, 'text', false)}</div></div><label>${tr('Map pin')}</label><p id="location-status" aria-live="polite">${tr('Tap the map to set your delivery location.')}</p><button class="address-location-button" type="button" id="geolocate">${tr('Use my location')}</button><div id="map" class="map"></div><small class="map-lookup-credit">${tr('Address lookup uses')} <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a>.</small><input type="hidden" id="latitude" name="latitude" value="${esc(a.latitude ?? 30.228)}"><input type="hidden" id="longitude" name="longitude" value="${esc(a.longitude ?? 31.48)}"><label><input name="is_default" type="checkbox" ${a.is_default ? 'checked' : ''}>${tr('Default address')}</label>`;
@@ -305,8 +320,9 @@ async function syncPushSubscription() {
   catch (error) { console.warn('Could not link OneSignal subscription to this account.', error); }
 }
 async function push() {
-  if (!config.oneSignalAppId || !('Notification' in window)) { promptInstallSoon(); return; }
-  if (!oneSignalOriginMatchesPage()) { promptInstallSoon(); return; }
+  if (!config.oneSignalAppId || !('Notification' in window) || !oneSignalOriginMatchesPage()) {
+    pushReady = true; updateNotificationPreference(); promptInstallSoon(); return;
+  }
   try {
     await loadScript('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js');
     window.OneSignalDeferred = window.OneSignalDeferred || [];
@@ -315,13 +331,14 @@ async function push() {
         pushSdk = OneSignal;
         await OneSignal.init({ appId: config.oneSignalAppId, serviceWorkerPath: '/OneSignalSDKWorker.js', serviceWorkerParam: { scope: '/' }, allowLocalhostAsSecureOrigin: true });
         if (user) await OneSignal.login(user.id);
-        OneSignal.User?.PushSubscription?.addEventListener?.('change', syncPushSubscription);
+        OneSignal.User?.PushSubscription?.addEventListener?.('change', () => { syncPushSubscription(); updateNotificationPreference(); });
         await syncPushSubscription();
+        pushReady = true; updateNotificationPreference();
         promptInstallSoon();
-      } catch (error) { console.warn('OneSignal could not initialize.', error); promptInstallSoon(); }
+      } catch (error) { console.warn('OneSignal could not initialize.', error); pushReady = true; updateNotificationPreference(); promptInstallSoon(); }
       finally { resolve(); }
     }));
-  } catch (error) { console.warn('OneSignal SDK could not load.', error); promptInstallSoon(); }
+  } catch (error) { console.warn('OneSignal SDK could not load.', error); pushReady = true; updateNotificationPreference(); promptInstallSoon(); }
 }
 const pageModules = {
   '/': () => import('./pages/home.js'), '/menu': () => import('./pages/menu.js'), '/cart': () => import('./pages/cart.js'),
@@ -414,6 +431,25 @@ bind('#account-toggle', 'click', () => {
   const open = toggle.getAttribute('aria-expanded') !== 'true';
   toggle.setAttribute('aria-expanded', String(open));
   popover.hidden = !open;
+});
+document.addEventListener('click', async e => {
+  const button = e.target.closest('[data-notification-toggle]');
+  if (!button) return;
+  if (!('Notification' in window)) { toast('This browser does not support notifications'); return; }
+  if (Notification.permission === 'denied') { toast('Allow notifications in this site’s browser settings'); return; }
+  const subscription = pushSdk?.User?.PushSubscription;
+  if (!subscription) { toast('Notifications are unavailable right now'); return; }
+  button.disabled = true;
+  try {
+    if (subscription.optedIn) await subscription.optOut();
+    else {
+      if (Notification.permission !== 'granted') await pushSdk.Notifications.requestPermission();
+      if (Notification.permission === 'granted') await subscription.optIn();
+    }
+    await syncPushSubscription();
+    updateNotificationPreference();
+  } catch (error) { toast(error.message || 'Could not update notification settings'); }
+  finally { updateNotificationPreference(); }
 });
 document.addEventListener('click', async e => {
   if (e.target.closest('#logout')) {

@@ -244,24 +244,49 @@ function hideLoadingScreen() {
   screen.classList.add('is-leaving');
   setTimeout(() => { screen.hidden = true; }, 380);
 }
-function openEngagement(step) {
+const onboardingKey = 'bella_first_visit_onboarding_v1';
+let onboardingTimer;
+function onboardingCopy() {
+  return language === 'ar' ? {
+    title: '\u0623\u0647\u0644\u0627\u064b \u0628\u0643 \u0641\u064a Bella Crosta',
+    body: '\u0641\u0639\u0651\u0644 \u0625\u0634\u0639\u0627\u0631\u0627\u062a \u0627\u0644\u0637\u0644\u0628\u0627\u062a \u0648\u062b\u0628\u0651\u062a \u0627\u0644\u062a\u0637\u0628\u064a\u0642 \u0644\u0645\u062a\u0627\u0628\u0639\u0629 \u0637\u0644\u0628\u0643 \u0648\u0641\u062a\u062d \u0627\u0644\u0645\u0648\u0642\u0639 \u0628\u0633\u0631\u0639\u0629.',
+    notify: '\u0641\u0639\u0651\u0644 \u0625\u0634\u0639\u0627\u0631\u0627\u062a \u0627\u0644\u0637\u0644\u0628\u0627\u062a', install: '\u062b\u0628\u0651\u062a \u0627\u0644\u062a\u0637\u0628\u064a\u0642', later: '\u0645\u0634 \u062f\u0644\u0648\u0642\u062a\u064a', done: '\u062a\u0645\u0627\u0645',
+    notifyReady: '\u0627\u0644\u0625\u0634\u0639\u0627\u0631\u0627\u062a \u0645\u0641\u0639\u0651\u0644\u0629', notifyUnavailable: '\u0627\u0644\u0625\u0634\u0639\u0627\u0631\u0627\u062a \u063a\u064a\u0631 \u0645\u062a\u0627\u062d\u0629 \u062d\u0627\u0644\u064a\u064b\u0627', installed: '\u0627\u0644\u062a\u0637\u0628\u064a\u0642 \u0645\u062b\u0628\u0651\u062a',
+    hint: '\u0627\u0644\u0645\u062a\u0635\u0641\u062d \u0633\u064a\u0637\u0644\u0628 \u0625\u0630\u0646\u0643 \u0628\u0639\u062f \u0636\u063a\u0637\u0643. \u062a\u0642\u062f\u0631 \u062a\u062a\u0627\u0628\u0639 \u0637\u0644\u0628\u0643 \u0628\u0625\u0634\u0639\u0627\u0631\u0627\u062a \u0648\u062a\u0636\u064a\u0641 \u0627\u0644\u0645\u0648\u0642\u0639 \u0644\u0634\u0627\u0634\u062a\u0643.',
+    installHint: '\u0627\u0641\u062a\u062d \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0645\u062a\u0635\u0641\u062d \u0648\u0627\u062e\u062a\u0631 \u00ab\u0625\u0636\u0627\u0641\u0629 \u0644\u0644\u0634\u0627\u0634\u0629 \u0627\u0644\u0631\u0626\u064a\u0633\u064a\u0629\u00bb \u0625\u0630\u0627 \u0644\u0645 \u064a\u0638\u0647\u0631 \u062a\u0623\u0643\u064a\u062f \u0627\u0644\u062a\u062b\u0628\u064a\u062a.',
+    laterBody: '\u0645\u0634 \u0647\u0646\u0637\u0644\u0628 \u0627\u0644\u0625\u0630\u0646 \u062a\u0627\u0646\u064a. \u064a\u0645\u0643\u0646\u0643 \u062a\u0641\u0639\u064a\u0644 \u0627\u0644\u0625\u0634\u0639\u0627\u0631\u0627\u062a \u0623\u0648 \u0627\u0644\u062a\u062b\u0628\u064a\u062a \u0644\u0627\u062d\u0642\u064b\u0627 \u0645\u0646 \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0645\u062a\u0635\u0641\u062d.'
+  } : {
+    title: 'Welcome to Bella Crosta', body: 'Get order updates with notifications and add Bella Crosta to your home screen for quick access.',
+    notify: 'Enable order notifications', install: 'Install the app', later: 'Not now', done: 'Got it',
+    notifyReady: 'Notifications are enabled', notifyUnavailable: 'Notifications are unavailable right now', installed: 'App installed',
+    hint: 'Your browser asks for notification permission only after you choose to enable it.',
+    installHint: 'If the install prompt does not appear, open your browser menu and choose “Install app” or “Add to Home Screen”.',
+    laterBody: 'No problem. We will not show this welcome again. You can enable notifications or install Bella Crosta later from your browser menu.'
+  };
+}
+function openWelcome() {
   const dialog = $('#engagement-dialog');
-  if (!dialog || dialog.open) return;
-  const ar = language === 'ar';
-  const copy = step === 'notify'
-    ? (ar ? { title: 'خليك أول واحد يعرف', body: 'فعّل الإشعارات عشان نطمنك على حالة طلبك ونبعتلك آخر أخبار بيلا كروستا.', action: 'فعّل الإشعارات', later: 'مش دلوقتي', hint: 'هنطلب إذنك من المتصفح بعد ما تضغط.' } : { title: 'Stay in the loop', body: 'Turn on notifications for order updates and fresh news from Bella Crosta.', action: 'Turn on notifications', later: 'Maybe later', hint: 'Your browser will ask for permission after you continue.' })
-    : (ar ? { title: 'ضيف بيلا كروستا لشاشتك', body: 'ثبّت الموقع عشان تفتحه بسرعة من الشاشة الرئيسية.', action: installPrompt ? 'أضف للشاشة الرئيسية' : 'تمام', later: 'لاحقًا', hint: installPrompt ? 'هيظهر تأكيد التثبيت من المتصفح.' : 'من قائمة المتصفح اختار «إضافة إلى الشاشة الرئيسية» أو «تثبيت التطبيق».' } : { title: 'Bella Crosta, close at hand', body: 'Add our site to your home screen for quick access to your next pizza.', action: installPrompt ? 'Add to home screen' : 'Got it', later: 'Maybe later', hint: installPrompt ? 'Your browser will show its install confirmation.' : 'Open your browser menu and choose “Add to Home Screen” or “Install app”.' });
-  const bell = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>';
-  const homeIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1z"/><path d="M12 3v4"/></svg>';
-  dialog.innerHTML = `<div class="engagement-card" dir="${ar ? 'rtl' : 'ltr'}"><button class="engagement-close" type="button" data-engagement="later" aria-label="${ar ? 'إغلاق' : 'Close'}">×</button><div class="engagement-brand"><img src="/assets/logo.png" alt="Bella Crosta" width="64" height="64"></div><div class="engagement-icon">${step === 'notify' ? bell : homeIcon}</div><h2 id="engagement-title">${copy.title}</h2><p>${copy.body}</p><div class="engagement-actions"><button class="primary" type="button" data-engagement="${step}">${copy.action}</button><button class="engagement-secondary" type="button" data-engagement="later">${copy.later}</button></div><span class="engagement-hint">${copy.hint}</span></div>`;
-  dialog.dataset.step = step;
+  if (!dialog || dialog.open || localStorage.getItem(onboardingKey) === '1') return;
+  const copy = onboardingCopy(), ar = language === 'ar';
+  const permission = 'Notification' in window ? Notification.permission : 'unsupported';
+  const notifyIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>';
+  const homeIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1z"/></svg>';
+  const canNotify = permission === 'default' && Boolean(config?.oneSignalAppId) && (!config.oneSignalOrigin || config.oneSignalOrigin === location.origin);
+  const notifyButton = permission === 'granted'
+    ? `<button class="engagement-secondary" type="button" disabled>${notifyIcon}${copy.notifyReady}</button>`
+    : canNotify
+      ? `<button class="primary" type="button" data-onboarding="notify">${notifyIcon}${copy.notify}</button>`
+      : `<button class="engagement-secondary" type="button" disabled>${notifyIcon}${copy.notifyUnavailable}</button>`;
+  const installButton = isInstalled()
+    ? `<button class="engagement-secondary" type="button" disabled>${homeIcon}${copy.installed}</button>`
+    : `<button class="engagement-secondary" type="button" data-onboarding="install">${homeIcon}${copy.install}</button>`;
+  dialog.innerHTML = `<div class="engagement-card" dir="${ar ? 'rtl' : 'ltr'}"><button class="engagement-close" type="button" data-onboarding="later" aria-label="Close">&times;</button><div class="engagement-brand"><img src="/assets/logo.png" alt="Bella Crosta" width="64" height="64"></div><h2 id="engagement-title">${copy.title}</h2><p id="engagement-body">${copy.body}</p><div class="engagement-actions">${notifyButton}${installButton}<button class="engagement-secondary" type="button" data-onboarding="later">${copy.later}</button></div><span class="engagement-hint" id="engagement-hint">${copy.hint}</span></div>`;
+  localStorage.setItem(onboardingKey, '1');
   dialog.showModal();
 }
 function promptInstallSoon() {
-  setTimeout(() => {
-    if (isInstalled() || Number(localStorage.getItem(laterKey('install')) || 0) > Date.now()) return;
-    openEngagement('install');
-  }, 450);
+  if (onboardingTimer || localStorage.getItem(onboardingKey) === '1') return;
+  onboardingTimer = setTimeout(() => { onboardingTimer = null; openWelcome(); }, 450);
 }
 async function syncPushSubscription() {
   if (!user || !pushSdk?.User?.PushSubscription?.id) return;
@@ -281,9 +306,7 @@ async function push() {
         if (user) await OneSignal.login(user.id);
         OneSignal.User?.PushSubscription?.addEventListener?.('change', syncPushSubscription);
         await syncPushSubscription();
-        const notifyLater = Number(localStorage.getItem(laterKey('notify')) || 0);
-        if (Notification.permission === 'default' && notifyLater <= Date.now()) openEngagement('notify');
-        else promptInstallSoon();
+        promptInstallSoon();
       } catch (error) { console.warn('OneSignal could not initialize.', error); promptInstallSoon(); }
       finally { resolve(); }
     }));
@@ -401,50 +424,55 @@ document.addEventListener('keydown', e => {
 });
 document.addEventListener('click', e => { if ($('#navigation').classList.contains('open') && (!e.target.closest('.header') || (e.target.closest('.mobile-nav-tools') && !e.target.closest('#account-menu')))) { $('#navigation').classList.remove('open'); $('#mobile-nav').setAttribute('aria-expanded', 'false'); } });
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installPrompt = e; $('#install').hidden = false; });
-window.addEventListener('appinstalled', () => { localStorage.setItem('bella_app_installed', '1'); installPrompt = null; $('#install').hidden = true; if ($('#engagement-dialog').open) $('#engagement-dialog').close(); });
+window.addEventListener('appinstalled', () => {
+  localStorage.setItem('bella_app_installed', '1'); installPrompt = null; $('#install').hidden = true;
+  const installButton = $('#engagement-dialog [data-onboarding="install"]');
+  if (installButton) { installButton.textContent = onboardingCopy().installed; installButton.disabled = true; installButton.removeAttribute('data-onboarding'); }
+});
 const engagementDialog = $('#engagement-dialog');
 engagementDialog.addEventListener('click', async e => {
-  const button = e.target.closest('[data-engagement]');
+  const button = e.target.closest('[data-onboarding]');
   if (!button) return;
-  const step = engagementDialog.dataset.step;
-  const action = button.dataset.engagement;
+  const action = button.dataset.onboarding;
+  const copy = onboardingCopy();
   if (action === 'later') {
-    localStorage.setItem(laterKey(step), String(Date.now() + (step === 'notify' ? 7 : 30) * 86400000));
-    engagementDialog.close();
-    if (step === 'notify') promptInstallSoon();
+    localStorage.setItem(onboardingKey, '1');
+    $('#engagement-body').textContent = copy.laterBody;
+    $('#engagement-hint').textContent = '';
+    engagementDialog.querySelectorAll('[data-onboarding]').forEach(item => item.remove());
+    engagementDialog.querySelector('.engagement-actions').innerHTML = `<button class="primary" type="button" data-onboarding="done">${copy.done}</button>`;
     return;
   }
+  if (action === 'done') { engagementDialog.close(); return; }
   button.disabled = true;
-  if (step === 'notify') {
+  if (action === 'notify') {
     try {
-      await pushSdk.Notifications.requestPermission();
+      if (pushSdk?.Notifications?.requestPermission) await pushSdk.Notifications.requestPermission();
+      else await Notification.requestPermission();
       await syncPushSubscription();
-      if (Notification.permission === 'default') localStorage.setItem(laterKey('notify'), String(Date.now() + 7 * 86400000));
-      else localStorage.removeItem(laterKey('notify'));
-      if (Notification.permission === 'granted') toast('Notifications enabled');
-    } catch (error) { toast(error.message || 'Could not enable notifications'); }
-    engagementDialog.close();
-    promptInstallSoon();
+      if (Notification.permission === 'granted') { button.textContent = copy.notifyReady; toast('Notifications enabled'); }
+      else { button.textContent = copy.notifyUnavailable; }
+    } catch (error) { button.disabled = false; toast(error.message || 'Could not enable notifications'); }
     return;
   }
-  if (installPrompt) {
+  if (action === 'install' && installPrompt) {
     const prompt = installPrompt;
     installPrompt = null;
     try {
       await prompt.prompt();
       const choice = await prompt.userChoice;
-      if (choice?.outcome === 'accepted') localStorage.setItem('bella_app_installed', '1');
-      else localStorage.setItem(laterKey('install'), String(Date.now() + 30 * 86400000));
-    } catch (error) { console.warn('Browser install prompt failed.', error); }
-  } else {
-    localStorage.setItem(laterKey('install'), String(Date.now() + 30 * 86400000));
-  }
-  engagementDialog.close();
+      if (choice?.outcome === 'accepted') {
+        localStorage.setItem('bella_app_installed', '1');
+        button.textContent = copy.installed;
+        button.removeAttribute('data-onboarding');
+      } else button.disabled = false;
+    } catch (error) { console.warn('Browser install prompt failed.', error); button.disabled = false; }
+  } else { $('#engagement-hint').textContent = copy.installHint; button.disabled = false; }
   $('#install').hidden = !installPrompt;
 });
 engagementDialog.addEventListener('cancel', e => {
   e.preventDefault();
-  engagementDialog.querySelector('[data-engagement="later"]')?.click();
+  engagementDialog.querySelector('[data-onboarding="later"]')?.click();
 });
 bind('#install', 'click', async () => {
   if (!installPrompt) return;

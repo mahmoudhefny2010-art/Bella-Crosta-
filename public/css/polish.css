@@ -106,7 +106,8 @@ html[lang=ar] .page>h1,html[lang=ar] .section-head h2,html[lang=ar] .napoli-sect
 .engagement-card h2{margin:0 0 9px;color:var(--cream);font:600 25px/1.2 Fraunces,serif;text-transform:none;letter-spacing:-.3px}
 .engagement-card p{max-width:330px;margin:0 auto 22px;color:var(--muted);font-size:13px;line-height:1.7}
 .engagement-actions{display:grid;gap:9px}
-.engagement-actions button{width:100%;min-height:46px;border-radius:11px;font-size:12px}
+.engagement-actions button{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:46px;border-radius:11px;font-size:12px}
+.engagement-actions button svg{width:18px;height:18px;flex:0 0 18px}
 .engagement-actions .engagement-secondary{border-color:transparent;background:transparent;color:var(--muted)}
 .engagement-actions .engagement-secondary:hover{background:color-mix(in srgb,var(--cream) 5%,transparent);color:var(--cream)}
 .engagement-hint{display:block;margin-top:14px;color:var(--muted);font-size:10px;line-height:1.6}
@@ -122,6 +123,11 @@ html[lang=ar] .engagement-card h2{font-family:Cairo,sans-serif;letter-spacing:0;
 @media(max-width:380px){.header,html[data-theme=light] .header{padding-inline:6px;gap:4px}.navbar-brand img{width:34px;height:34px;border-radius:7px}.header-actions{gap:1px}.header-actions button,.header-actions #theme-toggle,#mobile-nav{width:30px;min-width:30px;height:30px;min-height:30px;padding:3px;flex:0 0 30px}.header-actions #theme-toggle svg{width:17px;height:17px}.header-actions .language-switch{width:30px;min-width:30px;height:30px;min-height:30px;padding:3px;flex:0 0 30px}.header-actions .language-switch svg{width:17px;height:17px;flex-basis:17px}.header-actions .language-switch #language-label{display:none}.header .cart-link{width:30px;height:30px;flex:0 0 30px}.header-actions .signin-link,.header-actions .logout-icon{width:30px;height:30px;min-width:30px;flex:0 0 30px}.header-actions .signin-link svg,.header-actions .logout-icon svg{width:17px;height:17px}}
 
 /* Keep the brand and utility icons in separate, predictable mobile columns. */
+/* Show the text-selection cursor only in actual editable fields. */
+*,*::before,*::after{cursor:default}
+button,.button,a,[role="button"],summary,label,select,input[type="checkbox"],input[type="radio"]{cursor:pointer}
+button:disabled,[aria-disabled="true"]{cursor:not-allowed}
+input:not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="checkbox"]):not([type="radio"]),textarea,[contenteditable="true"],[role="textbox"]{cursor:text}
 @media(max-width:860px){
   .header,html[data-theme=light] .header{grid-template-columns:minmax(0,1fr) auto;direction:ltr;padding-inline:clamp(8px,3vw,20px);gap:8px}
   .header>.navbar-brand{grid-column:1;justify-self:start;min-width:0}

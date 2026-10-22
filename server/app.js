@@ -77,10 +77,13 @@ for (const route of ['/', '/menu', '/builder', '/cart', '/checkout', '/track', '
 app.get('/pages/:slug', async (req, res) => {
   const content = await require('./services/site-content').read(db);
   const page = JSON.parse(content.settings.pages.en).find(page => page.slug === req.params.slug && page.published);
-  if (!page) return res.status(404).send('Page not found.');
+  if (!page) return res.status(404).sendFile(path.join(publicDir, 'error.html'));
   res.sendFile(path.join(publicDir, 'pages/app.html'));
 });
-app.use((req, res) => res.status(404).json({ message: 'Page or endpoint not found.' }));
+app.use((req, res) => {
+  if (req.accepts('html') && !req.path.startsWith('/api/') && !req.path.startsWith('/auth/')) return res.status(404).sendFile(path.join(publicDir, 'error.html'));
+  res.status(404).json({ message: 'Page or endpoint not found.' });
+});
 app.use((error, req, res, next) => {
   if (res.headersSent) return next(error);
   if (error instanceof ZodError) return res.status(400).json({ message: 'Please check the entered values.', errors: error.issues.map(i => ({ path: i.path.join('.'), message: i.message })) });
@@ -93,6 +96,7 @@ app.use((error, req, res, next) => {
   }
   if (error.code === '23505' || [2601, 2627].includes(sqlCode)) return res.status(409).json({ message: 'This record already exists.' });
   if (['23503','23514'].includes(error.code) || sqlCode === 547) return res.status(409).json({ message: 'This record conflicts with related data or database rules.' });
+  if ((error.status || 500) >= 500 && req.accepts('html') && !req.path.startsWith('/api/') && !req.path.startsWith('/auth/')) return res.status(error.status || 500).sendFile(path.join(publicDir, '500.html'));
   console.error('[request]', error.name, error.code || '', error.status || 500);
   res.status(error.status || 500).json({ message: error.status ? error.message : 'Unable to complete the request.' });
 });

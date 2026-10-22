@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#FFFFFF"><title>Bella Crosta · Temporary error</title>
+  <link rel="icon" href="/assets/logo.png" type="image/png"><link rel="stylesheet" href="/css/bella.css"><script src="/js/theme.js"></script>
+  <style>
+    body{min-height:100svh;display:grid;place-items:center;padding:24px;background:radial-gradient(ellipse at 50% 40%,color-mix(in srgb,var(--red) 10%,var(--bg)),var(--bg) 62%)}
+    .status-card{width:min(540px,100%);padding:clamp(26px,7vw,52px);text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:22px;box-shadow:0 24px 70px #0002}
+    .status-tools{display:flex;justify-content:flex-end}.status-tools button{width:40px;height:40px;padding:8px}.status-tools svg{width:20px;height:20px}
+    .status-logo{width:86px;height:86px;object-fit:cover;border:1px solid var(--line);border-radius:22px;box-shadow:0 10px 30px #0002}
+    .status-brand{margin:18px 0 0;color:var(--cream);font:700 18px/1.2 Fraunces,Georgia,serif}.status-brand span{color:var(--red)}
+    .status-mark{display:grid;place-items:center;width:58px;height:58px;margin:26px auto 16px;border:1px solid color-mix(in srgb,var(--gold) 45%,var(--line));border-radius:18px;background:color-mix(in srgb,var(--gold) 12%,var(--panel));color:var(--gold);font:700 20px Fraunces,Georgia,serif}
+    .status-card h1{margin:0 0 12px;font:700 clamp(28px,7vw,42px)/1.2 Fraunces,Georgia,serif;text-transform:none;letter-spacing:-.5px}
+    .status-card p{max-width:390px;margin:0 auto 23px;font-size:14px;line-height:1.8}.status-actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap}.status-actions .button{min-height:46px}
+    .status-code{margin:20px 0 0!important;color:var(--muted);font-size:11px!important;letter-spacing:2px}
+    html[lang=ar] .status-card{font-family:Cairo,sans-serif}html[lang=ar] .status-card h1{font-family:Cairo,sans-serif;letter-spacing:0}
+    @media(max-width:420px){.status-card{padding:23px 18px}.status-actions{flex-direction:column}.status-actions .button{width:100%}}
+  </style>
+</head>
+<body>
+  <main class="status-card" aria-labelledby="status-title">
+    <div class="status-tools"><button id="theme-toggle" type="button" aria-label="Switch theme" title="Switch theme"></button></div>
+    <img class="status-logo" src="/assets/logo.png" alt="Bella Crosta logo" width="86" height="86">
+    <div class="status-brand">BELLA <span>CROSTA</span></div>
+    <div class="status-mark" aria-hidden="true">500</div>
+    <h1 id="status-title">A temporary hiccup</h1>
+    <p id="status-message">Something went wrong while loading this page. Please try again in a moment.</p>
+    <div class="status-actions"><button class="button primary" type="button" data-status-action="retry" id="retry-button">Try again</button><a class="button outline" href="/" id="home-link">Back to home</a></div>
+    <p class="status-code">TEMPORARY ERROR · 500</p>
+  </main>
+  <script defer src="/js/status-page.js"></script>
+</body>
+</html>

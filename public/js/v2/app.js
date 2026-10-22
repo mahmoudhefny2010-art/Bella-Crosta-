@@ -4,6 +4,7 @@ import { createDeliveryMap } from './maps.js';
 import { t, language, local, money, status, setLanguage } from './i18n.js';
 import { setSiteContent, siteValue, siteList, siteEnabled, isCustomized, applySiteFrame } from './site-content.js';
 import { createLiveClient } from './live.js';
+import { loadRepeatOrder, renderRepeatOrder, bindRepeatOrder } from './sections/repeat-order.js';
 const app = document.querySelector('#app');
 const path = location.pathname;
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -32,6 +33,20 @@ function add(productId, optionIds = [], custom = false) {
   const item = cart.find(i => i.key === key);
   if (item) item.quantity = Math.min(item.quantity + 1, 20);
   else cart.push({ key, productId, optionIds, custom, quantity: 1 });
+  saveCart(); toast('Added to your bag');
+}
+function addMany(items) {
+  for (const line of items) {
+    const product = products.find(item => String(item.id).toLowerCase() === String(line.productId).toLowerCase());
+    if (!product || !Array.isArray(line.optionIds)) continue;
+    const optionIds = line.optionIds.map(id => product.options.find(option => String(option.id).toLowerCase() === String(id).toLowerCase())?.id);
+    if (optionIds.some(id => !id)) continue;
+    const quantity = Math.max(1, Math.min(20, Number(line.quantity) || 1));
+    const key = product.id + ':' + [...optionIds].sort().join(',') + ':' + Boolean(line.custom);
+    const item = cart.find(value => value.key === key);
+    if (item) item.quantity = Math.min(20, item.quantity + quantity);
+    else cart.push({ key, productId: product.id, optionIds, custom: Boolean(line.custom), quantity });
+  }
   saveCart(); toast('Added to your bag');
 }
 function page(title, subtitle = '') {
@@ -287,8 +302,10 @@ const pageStyles = {
 };
 const sectionStyles = { '/': ['hero', 'brand-strip', 'napoli-feature'] };
 const pageContext = {
-  app, path, $, esc, tr, api, inEgypt, language, t, local, money, status, setLanguage, page, field, bind, busy, pizzaCard,
-  renderNav, saveCart, productFor, unit, total, add, requireUser, addressFields, addressInput, mountMap, locate, updateDriver, beep, loadScript, toast,
+  app, path, $, esc, tr, api, inEgypt, t, local, money, status, setLanguage, page, field, bind, busy, pizzaCard,
+  renderNav, saveCart, productFor, unit, total, add, addMany, requireUser, addressFields, addressInput, mountMap, locate, updateDriver, beep, loadScript, toast,
+  loadRepeatOrder, renderRepeatOrder, bindRepeatOrder,
+  get language() { return language; },
   renderRoute: target => renderRoute(target),
   get user() { return user; }, set user(value) { user = value; },
   get config() { return config; }, set config(value) { config = value; },

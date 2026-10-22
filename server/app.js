@@ -96,10 +96,15 @@ app.use((error, req, res, next) => {
   console.error('[request]', error.name, error.code || '', error.status || 500);
   res.status(error.status || 500).json({ message: error.status ? error.message : 'Unable to complete the request.' });
 });
-const server = http.createServer(app);
-const io = require('./sockets')(server, [...origins]);
-app.set('io', io);
+let io;
+let server;
+if (!process.env.VERCEL) {
+  server = http.createServer(app);
+  io = require('./sockets')(server, [...origins]);
+  app.set('io', io);
+}
 orders.setPublisher(async (order, { notify: shouldNotify = true } = {}) => {
+  if (!io) return;
   io.to('user:' + order.user_id).to('order:' + order.id).to('kitchen').to('admin').to('owner').to('delivery').to('driver:' + order.assigned_driver_id).emit('order', { id: order.id, status: order.status });
   if (shouldNotify) notify(order).catch(error => console.error('[push]', error.name));
 });

@@ -70,6 +70,34 @@ router.delete('/addresses/:id', auth, async (req, res) => {
 const createSchema = z.object({ idempotencyKey: uuid.optional(), customerName: text(160), paymentMethod: z.enum(['CASH_ON_DELIVERY', 'INSTAPAY_ON_DELIVERY']).default('CASH_ON_DELIVERY'), addressId: uuid.optional(), address: addressSchema.optional(), notes: optionalText(1000), items: z.array(z.object({ productId: uuid, quantity: z.number().int().min(1).max(20), optionIds: z.array(uuid).max(30).default([]), custom: z.boolean().default(false) }).strict()).min(1).max(30) }).strict().refine(v => Boolean(v.addressId || v.address), { message: 'Address is required.' });
 router.post('/orders', auth, rateLimit({ windowMs: 60000, limit: 8 }), body(createSchema), async (req, res) => res.status(201).json({ order: await orders.create(req.currentUser, req.input) }));
 router.get('/orders/mine', auth, async (req, res) => res.json({ orders: await db('orders').where({ user_id: req.currentUser.id }).orderBy('created_at', 'desc').limit(100) }));
+router.get('/orders/reorder', auth, async (req, res) => {
+  const previous = await db('orders').where({ user_id: req.currentUser.id, status: 'DELIVERED' }).orderBy('updated_at', 'desc').first();
+  if (!previous) return res.set('Cache-Control', 'no-store').json({ order: null, items: [] });
+  const storedItems = await db('order_items').where({ order_id: previous.id }).orderBy('id');
+  const productIds = [...new Set(storedItems.map(item => item.product_id).filter(Boolean))];
+  const availableProducts = productIds.length
+    ? await db('products as p').join('categories as c', 'p.category_id', 'c.id').whereIn('p.id', productIds).where({ 'p.is_available': true, 'c.is_active': true }).select('p.id')
+    : [];
+  const availableProductIds = new Set(availableProducts.map(product => String(product.id).toLowerCase()));
+  const savedOptions = storedItems.flatMap(item => {
+    try { const values = JSON.parse(item.options || '[]'); return Array.isArray(values) ? values.map(option => option?.id).filter(id => typeof id === 'string') : []; }
+    catch { return []; }
+  });
+  const availableOptions = savedOptions.length ? await db('product_options').whereIn('id', [...new Set(savedOptions)]).where({ is_available: true }).select('id', 'product_id') : [];
+  const optionProducts = new Map(availableOptions.map(option => [String(option.id).toLowerCase(), String(option.product_id).toLowerCase()]));
+  const items = [];
+  for (const item of storedItems) {
+    if (!availableProductIds.has(String(item.product_id).toLowerCase())) continue;
+    let saved = [];
+    try { saved = JSON.parse(item.options || '[]'); } catch {}
+    if (!Array.isArray(saved)) continue;
+    const optionIds = saved.map(option => option?.id).filter(id => typeof id === 'string');
+    const uniqueOptionIds = new Set(optionIds.map(id => id.toLowerCase()));
+    if (optionIds.length !== saved.length || uniqueOptionIds.size !== optionIds.length || optionIds.some(id => optionProducts.get(id.toLowerCase()) !== String(item.product_id).toLowerCase())) continue;
+    items.push({ productId: String(item.product_id).toLowerCase(), quantity: item.quantity, optionIds: optionIds.map(id => id.toLowerCase()), custom: item.is_custom });
+  }
+  res.set('Cache-Control', 'no-store').json({ order: { receiptNumber: previous.receipt_number ?? null, deliveredAt: previous.updated_at }, items });
+});
 router.patch('/orders/:id',auth,body(z.object({
   revision:z.string().regex(/^[a-f0-9]{64}$/),
   notes:z.string().trim().max(1000),

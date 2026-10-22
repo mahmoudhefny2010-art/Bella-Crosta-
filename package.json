@@ -4,7 +4,7 @@
   "description": "Bella Crosta ordering and delivery website",
   "main": "server/app.js",
   "scripts": {
-    "dev": "node scripts/sqlserver-dev.cjs",
+    "dev": "node scripts/dev.cjs",
     "dev:app": "node --watch server/app.js",
     "start": "node server/app.js",
     "seed": "knex seed:run --knexfile server/db/knexfile.js",
@@ -18,7 +18,9 @@
     "db:seed": "knex seed:run --knexfile server/db/knexfile.js",
     "db:setup": "node scripts/setup-sqlserver.cjs",
     "db:status": "node scripts/sqlserver-status.cjs",
-    "db:import": "node scripts/import-sqlserver.cjs"
+    "db:import": "node scripts/import-sqlserver.cjs",
+    "dev:sqlserver": "node scripts/sqlserver-dev.cjs",
+    "db:neon:import": "node scripts/migrate-to-neon.cjs"
   },
   "keywords": [
     "pizza",
@@ -30,6 +32,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "cloudinary": "^2.11.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
@@ -40,17 +43,20 @@
     "jsonwebtoken": "^9.0.3",
     "knex": "3.1.0",
     "leaflet": "^1.9.4",
-    "msnodesqlv8": "5.6.0",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
+    "pg": "^8.23.1",
     "qrcode": "^1.5.4",
     "socket.io": "^4.8.4",
     "tedious": "^20.3.8",
-    "zod": "^4.6.7"
+    "zod": "^4.6.7",
+    "socket.io-client": "^4.8.4"
   },
   "devDependencies": {
     "playwright": "^1.64.1",
-    "sharp": "^0.35.1",
-    "socket.io-client": "^4.8.4"
+    "sharp": "^0.35.1"
+  },
+  "optionalDependencies": {
+    "msnodesqlv8": "5.6.0"
   }
 }

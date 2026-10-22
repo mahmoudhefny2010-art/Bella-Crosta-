@@ -29,6 +29,7 @@ router.get('/media', async (req, res) => {
   };
   await walk(path.resolve(__dirname, '../../public/assets'), '/assets');
   await walk(path.resolve(__dirname, '../../public/uploads'), '/uploads');
-  res.json({ media });
+  const cloud=await require('../services/media').library();
+  res.json({media:[...cloud,...media]});
 });
 module.exports = router;

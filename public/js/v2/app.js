@@ -3,6 +3,7 @@ import { inEgypt } from './egypt.js';
 import { createDeliveryMap } from './maps.js';
 import { t, language, local, money, status, setLanguage } from './i18n.js';
 import { setSiteContent, siteValue, siteList, siteEnabled, isCustomized, applySiteFrame } from './site-content.js';
+import { createLiveClient } from './live.js';
 const app = document.querySelector('#app');
 const path = location.pathname;
 const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -253,6 +254,7 @@ async function syncPushSubscription() {
 }
 async function push() {
   if (!config.oneSignalAppId || !('Notification' in window)) { promptInstallSoon(); return; }
+  if(config.oneSignalOrigin&&config.oneSignalOrigin!==location.origin){promptInstallSoon();return;}
   try {
     await loadScript('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js');
     window.OneSignalDeferred = window.OneSignalDeferred || [];
@@ -332,8 +334,8 @@ async function init() {
   if (data[3]) setSiteContent(data[3]);
   cart = cart.filter(i => productFor(i) && Array.isArray(i.optionIds) && Number.isInteger(i.quantity) && i.quantity > 0 && i.quantity <= 20);
   saveCart(); renderNav();
-  if (user && window.io) {
-    socket = window.io();
+  if (user && (window.io || config.realtimeMode==='poll')) {
+    socket = createLiveClient(config,api);
     socket.on('order', data => {
       if (path === '/kitchen' && data.status === 'PLACED' && Date.now()-lastOrderBeep>1000) { lastOrderBeep=Date.now();beep(); }
       if (['/kitchen','/orders','/delivery'].includes(path) || (path === '/track' && data.id === activeOrder?.id)) scheduleLiveRefresh();

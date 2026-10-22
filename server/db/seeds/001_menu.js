@@ -1,3 +1,4 @@
+const {now:databaseNow}=require('../dialect');
 const upsert = require('../upsert');
 const categories = [
   { slug: "classic", name: "Classic", name_ar: "كلاسيكية", description: "Neapolitan classics", description_ar: "كلاسيكيات نابولي" },
@@ -24,7 +25,7 @@ exports.seed = async function seed(knex) {
         name_ar: category.name_ar,
         description: category.description,
         description_ar: category.description_ar,
-        updated_at: trx.raw('SYSUTCDATETIME()'),
+        updated_at: databaseNow(trx),
       });
     }
 
@@ -43,7 +44,7 @@ exports.seed = async function seed(knex) {
         category_id: categoryIds[category],
         is_featured: featured,
         is_available: true,
-        updated_at: trx.raw('SYSUTCDATETIME()'),
+        updated_at: databaseNow(trx),
       });
     }
 

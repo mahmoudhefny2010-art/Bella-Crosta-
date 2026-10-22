@@ -1,3 +1,4 @@
+const {now:databaseNow}=require('../db/dialect');
 const crypto = require("node:crypto");
 const express = require("express");
 const passport = require("passport");
@@ -25,9 +26,9 @@ if (configured) {
         google_id: profile.id,
         email,
         name: String(profile.displayName || email).slice(0, 160),
-        updated_at: db.raw('SYSUTCDATETIME()'),
+        updated_at: databaseNow(db),
       };
-      const user = await upsert(db, 'users', { email }, values, { google_id: profile.id, name: values.name, updated_at: db.raw('SYSUTCDATETIME()') });
+      const user = await upsert(db, 'users', { email }, values, { google_id: profile.id, name: values.name, updated_at: databaseNow(db) });
       if (!user.is_active) return done(null, false);
       const assignedRole = await db('user_roles').where({ user_id: user.id }).first();
       if (!assignedRole) await upsert(db, 'user_roles', { user_id: user.id, role: 'customer' }, { user_id: user.id, role: 'customer' });

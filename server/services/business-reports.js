@@ -1,5 +1,6 @@
 const { z } = require('zod');
 const db = require('../db');
+const {dateRange,cairoDay,isPostgres}=require('../db/dialect');
 const { fail } = require('./workflow');
 const statuses = ['PLACED','ACCEPTED','PREPARING','READY','OUT_FOR_DELIVERY','DELIVERED','CANCELLED'];
 const active = statuses.slice(0, 5);
@@ -13,13 +14,13 @@ function filters(input, defaults = false) {
 }
 function query(values) {
   const result = db('orders').leftJoin('users as driver', 'driver.id', 'orders.assigned_driver_id');
-  if (values.from) result.whereRaw("orders.created_at >= CONVERT(datetime2, (CONVERT(datetime2, ?) AT TIME ZONE 'Egypt Standard Time') AT TIME ZONE 'UTC') AND orders.created_at < CONVERT(datetime2, (DATEADD(day, 1, CONVERT(datetime2, ?)) AT TIME ZONE 'Egypt Standard Time') AT TIME ZONE 'UTC')", [values.from, values.to]);
+  if (values.from) dateRange(result,db,'orders.created_at',values.from,values.to);
   if (values.status === 'ACTIVE') result.whereIn('orders.status', active);
   else if (values.status !== 'ALL') result.where('orders.status', values.status);
   // Treat search as a literal substring, including SQL Server's LIKE metacharacters.
   if (values.search) {
-    const term = '%' + values.search.replace(/[\[\]%_]/g, c => '[' + c + ']') + '%';
-    result.where(function () { this.where('orders.order_number', 'like', term).orWhere('orders.customer_name', 'like', term).orWhere('orders.customer_phone', 'like', term); const receipt = values.search.match(/^(?:#|WEB-)?0*([1-9][0-9]*)$/i); if (receipt && receipt[1].length <= 18) this.orWhere('orders.receipt_number',receipt[1]); });
+    const term = '%' + (isPostgres(db) ? values.search.replace(/[\\%_]/g,c=>'\\'+c) : values.search.replace(/[\[\]%_]/g,c=>'['+c+']')) + '%';
+    result.where(function () { if(isPostgres(db))this.whereILike('orders.order_number',term).orWhereILike('orders.customer_name',term).orWhereILike('orders.customer_phone',term);else this.where('orders.order_number','like',term).orWhere('orders.customer_name','like',term).orWhere('orders.customer_phone','like',term); const receipt = values.search.match(/^(?:#|WEB-)?0*([1-9][0-9]*)$/i); if (receipt && receipt[1].length <= 18) this.orWhere('orders.receipt_number',receipt[1]); });
   }
   return result;
 }
@@ -38,13 +39,13 @@ async function report(input, defaultDates = true) {
 }
 async function analytics(input) {
   const values = filters(input, true), base = query(values);
-  const dateExpression = "CONVERT(varchar(10), orders.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Egypt Standard Time', 23)";
+  const dateExpression = isPostgres(db) ? "to_char(orders.created_at AT TIME ZONE 'Africa/Cairo', 'YYYY-MM-DD')" : "CONVERT(varchar(10), orders.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Egypt Standard Time', 23)";
   const [summary, byStatus, daily, topProducts] = await Promise.all([
     base.clone().select(db.raw("COUNT(*) as orders, COALESCE(SUM(CASE WHEN orders.status='DELIVERED' THEN orders.total_egp ELSE 0 END),0) as revenue, COALESCE(SUM(CASE WHEN orders.status='CANCELLED' THEN 1 ELSE 0 END),0) as cancelled, COALESCE(SUM(CASE WHEN orders.status NOT IN ('DELIVERED','CANCELLED') THEN 1 ELSE 0 END),0) as active, COALESCE(SUM(CASE WHEN orders.status='DELIVERED' THEN 1 ELSE 0 END),0) as delivered")).first(),
     base.clone().select('orders.status').count('* as count').groupBy('orders.status'),
     base.clone().select(db.raw(`${dateExpression} as day`)).count('* as orders').sum({ total: 'orders.total_egp' }).groupByRaw(dateExpression).orderBy('day'),
     db('order_items').whereIn('order_id', base.clone().select('orders.id').where('orders.status','DELIVERED')).select('product_name').sum({ quantity:'quantity', revenue:'line_total_egp' }).groupBy('product_name').orderBy('quantity','desc').limit(10)
   ]);
-  return { from: values.from, to: values.to, summary: { orders: Number(summary.orders), revenue: Number(summary.revenue), cancelled: Number(summary.cancelled), active: Number(summary.active), delivered: Number(summary.delivered), averageOrder: summary.delivered ? Number(summary.revenue) / Number(summary.delivered) : 0 }, byStatus, daily, topProducts };
+  return { from: values.from, to: values.to, summary: { orders: Number(summary.orders), revenue: Number(summary.revenue), cancelled: Number(summary.cancelled), active: Number(summary.active), delivered: Number(summary.delivered), averageOrder: summary.delivered ? Number(summary.revenue) / Number(summary.delivered) : 0 }, byStatus:byStatus.map(row=>({...row,count:Number(row.count)})), daily:daily.map(row=>({...row,orders:Number(row.orders),total:Number(row.total)})), topProducts:topProducts.map(row=>({...row,quantity:Number(row.quantity),revenue:Number(row.revenue)})) };
 }
 module.exports = { statuses, active, today, filters, query, list, report, analytics };

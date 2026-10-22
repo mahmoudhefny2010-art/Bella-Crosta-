@@ -1,3 +1,4 @@
+const {now:databaseNow}=require('../db/dialect');
 const { z } = require('zod');
 const fs = require('node:fs/promises');
 const path = require('node:path');
@@ -50,7 +51,8 @@ field('business.delivery_fee', 'Settings', 'Delivery fee (EGP)', 'number', proce
 field('business.accept_orders', 'Settings', 'Accept new orders', 'boolean', 'true');
 field('business.closed_message', 'Settings', 'Ordering paused message', 'text', 'Online ordering is temporarily paused. Please try again later.', 'الطلبات متوقفة مؤقتًا، حاول مرة أخرى لاحقًا.');
 const byKey = new Map(fields.map(item => [item.key, item]));
-const imagePath = value => /^\/(?:assets|uploads)\/[a-zA-Z0-9_/.-]+\.(?:png|jpg|jpeg|webp|avif|gif|svg)$/i.test(value) && !value.split('/').includes('..');
+const imagePath = value => require('./media').validImage(value);
+const legacyImagePath = value => /^\/(?:assets|uploads)\/[a-zA-Z0-9_/.-]+\.(?:png|jpg|jpeg|webp|avif|gif|svg)$/i.test(value) && !value.split('/').includes('..');
 const safeLink = value => {
   if (/^\/(?!\/)[a-zA-Z0-9_/?=&%#.-]*$/.test(value) && !/%(?:2f|5c|0[ad])/i.test(value) && !value.split('/').includes('..')) return true;
   try { const url = new URL(value); return ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password; } catch { return false; }
@@ -102,11 +104,12 @@ async function save(db, entries) {
     if (entry.key === 'pages') images.push(...JSON.parse(entry.en).map(page => page.image).filter(Boolean));
   }
   for (const url of images) {
+    if(require('./media').cloudImage(url))continue;
     try { if (!(await fs.stat(path.join(__dirname, '../../public', url))).isFile()) fail('Image not found. Upload an image first.'); }
     catch { fail('Image not found. Upload an image first.'); }
   }
   await db.transaction(async trx => {
-    for (const entry of entries) await upsert(trx, 'site_settings', { setting_key: entry.key }, { value_en: entry.en, value_ar: entry.ar }, { value_en: entry.en, value_ar: entry.ar, updated_at: trx.raw('SYSUTCDATETIME()') });
+    for (const entry of entries) await upsert(trx, 'site_settings', { setting_key: entry.key }, { value_en: entry.en, value_ar: entry.ar }, { value_en: entry.en, value_ar: entry.ar, updated_at: databaseNow(trx) });
   });
   return read(db);
 }

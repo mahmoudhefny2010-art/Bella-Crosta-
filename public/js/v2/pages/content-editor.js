@@ -104,7 +104,7 @@ export async function renderContentEditor(ctx, container) {
   container.addEventListener('change', async event => {
     const fileInput = event.target.closest('[data-content-upload]'); if (!fileInput) return;
     const file = fileInput.files?.[0]; if (!file) return;
-    if (file.size > 5 * 1024 * 1024 || !['image/png','image/jpeg','image/webp'].includes(file.type)) { toast(ar ? 'اختر صورة JPG أو PNG أو WebP بحجم أقل من 5 ميجا.' : 'Choose a JPG, PNG or WebP image up to 5 MB.'); fileInput.value = ''; return; }
+    if (file.size > 4 * 1024 * 1024 || !['image/png','image/jpeg','image/webp'].includes(file.type)) { toast(ar ? 'اختر صورة JPG أو PNG أو WebP بحجم أقل من 4 ميجا.' : 'Choose a JPG, PNG or WebP image up to 4 MB.'); fileInput.value = ''; return; }
     const form = fileInput.closest('form'), saveButton = form.querySelector('[type="submit"]'); fileInput.disabled = saveButton.disabled = true;
     try {
       const response = await fetch('/api/admin/uploads', { method:'POST',credentials:'same-origin',headers:{'Content-Type':file.type},body:file });

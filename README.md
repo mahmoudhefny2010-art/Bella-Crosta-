@@ -1,17 +1,15 @@
 # Bella Crosta
 
 Pizza ordering, kitchen, delivery and administration in English and Arabic.
-The active app uses Express, Microsoft SQL Server, Knex, Google OAuth, JWT cookies,
+The active app uses Express, Neon PostgreSQL (with a retained SQL Server fallback), Knex, Google OAuth, JWT cookies,
 Socket.IO, Google Maps (with a backup map), QR delivery confirmation and a PWA shell.
 
 ## Run on Windows
 
-Requires Node.js 22+, Microsoft SQL Server, ODBC Driver 18 for SQL Server, and a
-Windows account permitted to access the database.
+Requires Node.js 22+ and the existing private Neon connection configuration.
 
 1. Keep your existing .env; use .env.example only when creating a new installation.
-2. Confirm SQLSERVER_SERVER=localhost, SQLSERVER_DATABASE=bella_crosta and
-   SQLSERVER_AUTH=windows for this workstation.
+2. Use `DB_PROVIDER=postgres` and the private `DATABASE_URL` in `.env`.
 3. Run:
 
 ```powershell
@@ -19,20 +17,22 @@ npm.cmd ci
 npm.cmd run dev
 ```
 
-Open **http://localhost:4000**. The launcher creates the project database if needed,
-applies migrations, seeds a new empty installation only, and starts Node's watcher.
-It uses your existing SQL Server service and Windows Authentication. It does not
-change server authentication settings or restart SQL Server. Stop with Ctrl+C.
+Open **http://localhost:4000**. In PostgreSQL mode, the launcher starts Node's watcher
+and retains the existing development session secret. It does not seed or overwrite
+the migrated Neon data. Apply schema changes explicitly with `npm.cmd run db:migrate`.
+Stop with Ctrl+C. SQL Server mode retains the original setup launcher and requires
+SQL Server, ODBC Driver 18 and Windows database access.
 
 The migrated installation already contains the existing menu and Google account.
-Private backups remain in data/backups. See [SQL Server configuration and migration](docs/sql-server.md).
+Private backups remain in data/backups. See [Neon migration](docs/neon-migration.md)
+and the retained [SQL Server configuration](docs/sql-server.md).
 
 ## Commands
 
 | Command | Purpose |
 | --- | --- |
-| npm.cmd run dev | Prepare SQL Server and start the development watcher |
-| npm.cmd start | Start Express against the configured SQL Server |
+| npm.cmd run dev | Start development for the selected database provider |
+| npm.cmd start | Start Express against the selected database provider |
 | npm.cmd run db:setup | Create/prepare the database; seed only when empty |
 | npm.cmd run db:migrate | Apply schema migrations |
 | npm.cmd run db:seed | Explicitly restore/update the standard menu; overwrites seeded menu fields |
@@ -73,18 +73,21 @@ OneSignal uses ONESIGNAL_APP_ID and ONESIGNAL_REST_API_KEY when configured.
 
 ## Production
 
-Set NODE_ENV=production, HTTPS APP_URL, exact CORS_ORIGINS, SQL Server connection
-settings, and a random JWT_SECRET of at least 32 characters. Use an authorized
-service identity, trusted TLS certificates and suitable database permissions.
-See [SQL Server deployment notes](docs/sql-server.md). Apply schema migrations
-before starting the app. Do not use the local development certificate exception
-in production.
+Vercel runs the existing Express API as a serverless function and serves the
+static frontend from `public/`. Set `DB_PROVIDER=postgres`, the Neon
+`DATABASE_URL`, `NODE_ENV=production`, `APP_URL` and `CORS_ORIGINS` to the
+deployed HTTPS origin, and a random `JWT_SECRET` of at least 32 characters.
+Configure the existing Google OAuth, Maps, OneSignal and Cloudinary variables
+in Vercel's Production environment. Set `GOOGLE_CALLBACK_URL` to
+`https://<deployment-host>/auth/google/callback` and register that callback in
+Google Cloud. `ONESIGNAL_SITE_URL` must match the production origin and the
+same origin must be configured in the OneSignal dashboard. The app uses
+database polling for cross-instance order updates on Vercel. Builds do not run
+migrations or seed data; apply PostgreSQL migrations explicitly with
+`npm.cmd run db:migrate` before routing customers to a new deployment.
 
 ## Legacy material
 
-The retired database, old `src/` application, database launch scripts, previous
-compose file and unused frontend scripts/styles were removed after explicit
-authorization and recovery archive verification. Private archives remain in
-data/backups. The active entry point is server/app.js and the only active
-database configuration is server/db/sqlserver-config.js. Earlier root-level
-planning documents describe the historical implementation.
+Neon PostgreSQL is the active hosted database. SQL Server configuration and
+migrations remain available for existing local installations. Private database
+exports and local development secrets are ignored by Git in `data/`.

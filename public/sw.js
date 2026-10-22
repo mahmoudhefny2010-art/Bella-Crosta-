@@ -1,4 +1,4 @@
-const VERSION = 'bella-v2-78';
+const VERSION = 'bella-v2-79';
 const SHELL = [
   '/offline.html', '/css/bella.css', '/css/polish.css', '/css/pages/home.css', '/css/pages/menu.css', '/css/pages/cart.css',
   '/css/pages/checkout.css', '/css/pages/orders.css', '/css/pages/addresses.css', '/css/pages/builder.css', '/css/pages/kitchen.css',
@@ -7,7 +7,7 @@ const SHELL = [
   '/js/v2/pages/cart.js', '/js/v2/pages/checkout.js', '/js/v2/pages/orders.js', '/js/v2/pages/addresses.js', '/js/v2/pages/builder.js',
   '/js/v2/pages/kitchen.js', '/js/v2/pages/delivery.js', '/js/v2/pages/admin.js', '/js/v2/pages/login.js', '/js/v2/sections/hero.js', '/js/v2/sections/brand-strip.js',
   '/js/v2/sections/napoli-feature.js', '/assets/logo.png', '/assets/icon-192.png', '/assets/icon-512.png', '/js/v2/admin-workspace.js',
-  '/js/v2/site-content.js', '/js/v2/payment-summary.js', '/js/v2/receipt.js', '/js/v2/order-editor.js', '/js/v2/pages/content-editor.js', '/js/v2/pages/content-page.js', '/js/v2/pages/owner.js', '/css/pages/content-page.css', '/css/pages/owner.css',
+  '/js/v2/site-content.js', '/js/v2/live.js', '/js/v2/payment-summary.js', '/js/v2/receipt.js', '/js/v2/order-editor.js', '/js/v2/pages/content-editor.js', '/js/v2/pages/content-page.js', '/js/v2/pages/owner.js', '/css/pages/content-page.css', '/css/pages/owner.css',
   ...['grid','package','users','shopping-bag','bar-chart-2','search','refresh-cw','external-link','log-out','moon','globe','arrow-left','arrow-right','menu','x','sliders','check-circle'].map(name => `/assets/admin/${name}.svg`)
 ];
 self.addEventListener('install', event => { event.waitUntil(caches.open(VERSION).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting())); });

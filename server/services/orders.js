@@ -1,7 +1,9 @@
+const {now:databaseNow}=require('../db/dialect');
 const crypto = require('node:crypto');
 const db = require('../db');
 const { fail, assertTransition, credentials, assertDelivery } = require('./workflow');
 const { createPayment } = require('./payments');
+const {requestLock}=require('../db/dialect');
 const inEgypt = require('./egypt');
 let publish = async () => {};
 function setPublisher(fn) { publish = fn; }
@@ -55,7 +57,7 @@ async function create(user, input) {
     const {idempotencyKey, ...requestBody} = input;
     const requestHash = crypto.createHash('sha256').update(JSON.stringify(requestBody)).digest('hex');
     if (requestKey) {
-      await trx.raw("DECLARE @result int; EXEC @result = sys.sp_getapplock @Resource = ?, @LockMode = 'Exclusive', @LockOwner = 'Transaction', @LockTimeout = 5000; IF @result < 0 THROW 51000, 'Order retry is busy. Please retry shortly.', 1;", ['checkout:'+user.id+':'+requestKey]);
+      await requestLock(trx,'checkout:'+user.id+':'+requestKey);
       const previous = await trx('order_requests').where({user_id:user.id,request_key:requestKey}).first();
       if (previous) {
         if (previous.request_hash !== requestHash) fail('This checkout request was already used for different order details.',409);
@@ -88,7 +90,7 @@ async function transition(id, to, actor) {
     assertTransition(order.status, to);
     if (to === 'OUT_FOR_DELIVERY') fail('Use the driver pickup endpoint.');
     if (to === 'DELIVERED') fail('Delivery requires the customer code.');
-    await trx('orders').where({ id }).update({ status: to, updated_at: trx.raw('SYSUTCDATETIME()') });
+    await trx('orders').where({ id }).update({ status: to, updated_at: databaseNow(trx) });
     await trx('order_events').insert({ order_id: id, status: to, actor_id: actor.id });
     return { ...order, status: to };
   });
@@ -107,7 +109,7 @@ async function edit(id,input,customer) {
     const subtotal=lines.reduce((sum,line)=>sum+line.line_total_egp,0);
     await trx('order_items').where({order_id:id}).del();
     await trx('order_items').insert(lines.map(line=>({...line,order_id:id})));
-    const [updated]=await trx('orders').where({id}).update({notes:input.notes,subtotal_egp:subtotal,total_egp:subtotal+Number(locked.delivery_fee_egp),updated_at:trx.raw('SYSUTCDATETIME()')}).returning('*');
+    const [updated]=await trx('orders').where({id}).update({notes:input.notes,subtotal_egp:subtotal,total_egp:subtotal+Number(locked.delivery_fee_egp),updated_at:databaseNow(trx)}).returning('*');
     await trx('order_events').insert({order_id:id,status:'PLACED',actor_id:customer.id,note:'Customer edited order before kitchen acceptance'});
     return updated;
   });
@@ -122,7 +124,7 @@ async function pickup(id, driver) {
     // A token is issued when the customer opens tracking, then retained only by that browser.
     const credential = credentials();
     await trx('delivery_tokens').insert({ order_id: id, token_hash: credential.token_hash, manual_code_hash: credential.manual_code_hash, expires_at: new Date(Date.now() + 2 * 60 * 60 * 1000) });
-    await trx('orders').where({ id }).update({ status: 'OUT_FOR_DELIVERY', updated_at: trx.raw('SYSUTCDATETIME()') });
+    await trx('orders').where({ id }).update({ status: 'OUT_FOR_DELIVERY', updated_at: databaseNow(trx) });
     await trx('order_events').insert({ order_id: id, status: 'OUT_FOR_DELIVERY', actor_id: driver.id });
     return { ...order, status: 'OUT_FOR_DELIVERY' };
   });
@@ -135,7 +137,7 @@ async function issueCode(id, user) {
     if (!order || order.user_id !== user.id) fail('Order not found.', 404);
     if (order.status !== 'OUT_FOR_DELIVERY') fail('Delivery code becomes available after pickup.', 409);
     // Reissuing explicitly invalidates previous codes; plaintext credentials are never persisted.
-    await trx('delivery_tokens').where({ order_id: id }).whereNull('used_at').update({ used_at: trx.raw('SYSUTCDATETIME()') });
+    await trx('delivery_tokens').where({ order_id: id }).whereNull('used_at').update({ used_at: databaseNow(trx) });
     const value = credentials();
     await trx('delivery_tokens').insert({ order_id: id, token_hash: value.token_hash, manual_code_hash: value.manual_code_hash, expires_at: new Date(Date.now() + 2 * 60 * 60 * 1000) });
     return { token: value.token, code: value.code };
@@ -151,8 +153,8 @@ async function confirm(input, driver) {
     const received = order.payment_method === 'CASH_ON_DELIVERY' ? input.amountReceived : Number(order.total_egp);
     if (typeof received !== 'number' || !Number.isFinite(received) || received < Number(order.total_egp) || received > 10000000 || Math.abs(received * 100 - Math.round(received * 100)) > 0.000001) fail('Enter a valid received amount covering the order total.');
     const change = (Math.round(received * 100) - Math.round(Number(order.total_egp) * 100)) / 100;
-    await trx('delivery_tokens').where({ order_id: order.id }).whereNull('used_at').update({ used_at: trx.raw('SYSUTCDATETIME()') });
-    await trx('orders').where({ id: order.id }).update({ status: 'DELIVERED', payment_status:'PAID', amount_received_egp:received, change_due_egp:change, paid_by:driver.id, paid_at:trx.raw('SYSUTCDATETIME()'), updated_at: trx.raw('SYSUTCDATETIME()') });
+    await trx('delivery_tokens').where({ order_id: order.id }).whereNull('used_at').update({ used_at: databaseNow(trx) });
+    await trx('orders').where({ id: order.id }).update({ status: 'DELIVERED', payment_status:'PAID', amount_received_egp:received, change_due_egp:change, paid_by:driver.id, paid_at:databaseNow(trx), updated_at: databaseNow(trx) });
     await trx('order_events').insert({ order_id: order.id, status: 'DELIVERED', actor_id: driver.id });
     await trx('driver_locations').insert({ order_id: order.id, driver_id: driver.id, latitude: input.latitude, longitude: input.longitude });
     return { ...order, status: 'DELIVERED', payment_status:'PAID', amount_received_egp:received, change_due_egp:change };
@@ -170,7 +172,7 @@ async function acceptDelivery(id, driver) {
     if (!['PLACED','ACCEPTED','PREPARING','READY'].includes(order.status)) fail('This order is no longer available to accept.',409);
     if (order.assigned_driver_id === driver.id) return order;
     if (order.assigned_driver_id) fail('Another driver is already assigned to this order.',409);
-    const [updated] = await trx('orders').where({id}).whereNull('assigned_driver_id').update({assigned_driver_id:driver.id,updated_at:trx.raw('SYSUTCDATETIME()')}).returning('*');
+    const [updated] = await trx('orders').where({id}).whereNull('assigned_driver_id').update({assigned_driver_id:driver.id,updated_at:databaseNow(trx)}).returning('*');
     if (!updated) fail('Another driver has already accepted this order.',409);
     await trx('order_events').insert({order_id:id,status:order.status,actor_id:driver.id,note:'Delivery accepted by driver'});
     return updated;
@@ -184,7 +186,7 @@ async function assign(id, driverId) {
     if (!driver) fail('Driver not found.', 404);
     const order = await trx('orders').where({ id }).forUpdate().first();
     if (!order || !['PLACED','ACCEPTED','PREPARING','READY','OUT_FOR_DELIVERY'].includes(order.status)) fail('Order is not available for assignment.', 409);
-    const [updated] = await trx('orders').where({ id }).update({ assigned_driver_id: driverId, updated_at: trx.raw('SYSUTCDATETIME()') }).returning('*');
+    const [updated] = await trx('orders').where({ id }).update({ assigned_driver_id: driverId, updated_at: databaseNow(trx) }).returning('*');
     return updated;
   });
   await publish(order, { notify: false });

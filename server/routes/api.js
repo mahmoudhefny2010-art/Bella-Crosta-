@@ -1,3 +1,4 @@
+const {now:databaseNow}=require('../db/dialect');
 const express = require('express');
 const { randomUUID } = require('node:crypto');
 const fs = require('node:fs/promises');
@@ -9,6 +10,7 @@ const db = require('../db');
 const upsert = require('../db/upsert');
 const orders = require('../services/orders');
 const notifications = require('../services/notifications');
+const media=require('../services/media');
 const siteContent = require('../services/site-content');
 const businessReports = require('../services/business-reports');
 const inEgypt = require('../services/egypt');
@@ -16,6 +18,7 @@ const reverseGeocode = require('../services/geocoding');
 const { fail } = require('../services/workflow');
 const { requireAuth: auth, requireRoles: roles } = require('../middleware/session');
 const { ROLE_VALUES, primaryRole, hasRole, replaceUserRoles } = require('../services/roles');
+const {dateRange,isPostgres}=require('../db/dialect');
 const router = express.Router();
 const uuid = z.string().uuid();
 const text = (max = 200) => z.string().trim().min(1).max(max);
@@ -24,9 +27,10 @@ const phone = z.string().regex(/^(?:\+20|0)(?:10|11|12|15)\d{8}$/);
 const addressSchema = z.object({ label: text(60).default('Home'), address_line: text(300), landmark: optionalText(), floor: optionalText(20), apartment: optionalText(20), phone, latitude: z.number().min(-90).max(90), longitude: z.number().min(-180).max(180), is_default: z.boolean().default(false) }).strict().refine(value => inEgypt(value.latitude, value.longitude), { path: ['latitude'], message: 'Please choose a location inside Egypt.' });
 const body = schema => (req, res, next) => { req.input = schema.parse(req.body); next(); };
 router.param('id', (req, res, next, id) => { uuid.parse(id); next(); });
-router.get('/health', async (req, res) => { await db.raw('SELECT 1'); res.json({ ok: true, database: 'mssql' }); });
-router.get('/config', async (req, res) => res.json({ googleEnabled: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_CALLBACK_URL), googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY?.trim() || null, googleMapsMapId: process.env.GOOGLE_MAPS_MAP_ID?.trim() || null, oneSignalAppId: process.env.ONESIGNAL_APP_ID || null, ...await siteContent.operational(db) }));
+router.get('/health', async (req, res) => { await db.raw('SELECT 1'); res.json({ ok: true, database: isPostgres(db) ? 'postgres' : 'mssql' }); });
+router.get('/config', async (req, res) => res.json({ googleEnabled: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_CALLBACK_URL), googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY?.trim() || null, googleMapsMapId: process.env.GOOGLE_MAPS_MAP_ID?.trim() || null, oneSignalAppId: process.env.ONESIGNAL_APP_ID || null, oneSignalOrigin:process.env.ONESIGNAL_SITE_URL || null, realtimeMode:process.env.VERCEL?'poll':'socket', ...await siteContent.operational(db) }));
 router.get('/content', async (req, res) => res.json(siteContent.publicData(await siteContent.read(db))));
+router.use('/live',require('./live'));
 router.use('/owner', roles('owner'), require('./owner'));
 router.get('/geocode/reverse', rateLimit({ windowMs: 60000, limit: 10 }), async (req, res) => {
   const latitude = Number(req.query.lat), longitude = Number(req.query.lon);
@@ -48,7 +52,7 @@ router.post('/addresses', auth, body(addressSchema), async (req, res) => {
 router.put('/addresses/:id', auth, body(addressSchema), async (req, res) => {
   const address = await db.transaction(async trx => {
     if (req.input.is_default) await trx('addresses').where({ user_id: req.currentUser.id }).update({ is_default: false });
-    const [address] = await trx('addresses').where({ id: req.params.id, user_id: req.currentUser.id }).update({ ...req.input, updated_at: trx.raw('SYSUTCDATETIME()') }).returning('*');
+    const [address] = await trx('addresses').where({ id: req.params.id, user_id: req.currentUser.id }).update({ ...req.input, updated_at: databaseNow(trx) }).returning('*');
     if (!address) fail('Address not found.', 404);
     return address;
   });
@@ -127,7 +131,7 @@ router.post('/push/subscribers', auth, body(z.object({ subscriptionId: text(120)
   await upsert(db, 'push_subscribers', { onesignal_subscription_id: req.input.subscriptionId }, { user_id: req.currentUser.id, external_id: req.currentUser.id }, { user_id: req.currentUser.id, external_id: req.currentUser.id });
   res.json({ ok: true });
 });
-const productSchema = z.object({ category_id: uuid, name: text(120), name_ar: text(160), slug: z.string().regex(/^[a-z0-9-]+$/).max(120), description: optionalText(2000), description_ar: optionalText(2000), price_egp: z.number().int().positive().max(100000), sale_price_egp: z.number().int().positive().max(100000).nullable().default(null), send_offer_notification: z.boolean().default(false), image_url: z.string().regex(/^(?:\/uploads\/[\w.-]+|\/assets\/[\w/.-]+)?$/).default(''), ingredients: z.array(text(100)).max(30).default([]), is_available: z.boolean().default(true), is_featured: z.boolean().default(false), prep_minutes: z.number().int().min(5).max(120).default(20) }).strict().refine(product => product.sale_price_egp === null || product.sale_price_egp < product.price_egp, { path: ['sale_price_egp'], message: 'Offer price must be lower than the regular price.' });
+const productSchema = z.object({ category_id: uuid, name: text(120), name_ar: text(160), slug: z.string().regex(/^[a-z0-9-]+$/).max(120), description: optionalText(2000), description_ar: optionalText(2000), price_egp: z.number().int().positive().max(100000), sale_price_egp: z.number().int().positive().max(100000).nullable().default(null), send_offer_notification: z.boolean().default(false), image_url: z.string().max(2000).refine(value=>!value||media.validImage(value),'Choose an image uploaded to this site.').default(''), ingredients: z.array(text(100)).max(30).default([]), is_available: z.boolean().default(true), is_featured: z.boolean().default(false), prep_minutes: z.number().int().min(5).max(120).default(20) }).strict().refine(product => product.sale_price_egp === null || product.sale_price_egp < product.price_egp, { path: ['sale_price_egp'], message: 'Offer price must be lower than the regular price.' });
 router.use('/admin', roles('admin'));
 router.use('/admin/content', require('./content'));
 router.get('/admin/overview', async (req, res) => {
@@ -138,12 +142,12 @@ router.get('/admin/overview', async (req, res) => {
     db('users').where({ is_active: true }).whereExists(function () {
       this.select('*').from('user_roles').whereRaw('user_roles.user_id = users.id').whereIn('role', ['admin', 'kitchen', 'driver']);
     }).count('* as total').first(),
-    db('orders').where({ status: 'DELIVERED' }).whereRaw("CONVERT(date, created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Egypt Standard Time') = CONVERT(date, ?)", [today]).sum('total_egp as revenue').first()
+    dateRange(db('orders').where({status:'DELIVERED'}),db,'created_at',today,today).sum('total_egp as revenue').first()
   ]);
   res.json({ products: Number(products.total), activeOrders: Number(activeOrders.total), staff: Number(staff.total), revenue: Number(sales.revenue || 0), date: today });
 });
 router.get('/admin/products', async (req, res) => res.json({ products: await db('products').orderBy('name'), categories: await db('categories').orderBy('name') }));
-router.post('/admin/uploads', express.raw({ type: ['image/jpeg', 'image/png', 'image/webp'], limit: '5mb' }), async (req, res) => {
+router.post('/admin/uploads', express.raw({ type: ['image/jpeg', 'image/png', 'image/webp'], limit: '4mb' }), async (req, res) => {
   const mime = req.get('content-type')?.split(';')[0].trim().toLowerCase();
   const buffer = req.body;
   const valid = Buffer.isBuffer(buffer) && buffer.length > 0 && (
@@ -152,6 +156,8 @@ router.post('/admin/uploads', express.raw({ type: ['image/jpeg', 'image/png', 'i
     (mime === 'image/webp' && buffer.length >= 12 && buffer.toString('ascii', 0, 4) === 'RIFF' && buffer.toString('ascii', 8, 12) === 'WEBP')
   );
   if (!valid) return res.status(415).json({ message: 'Choose a valid JPG, PNG or WebP image.' });
+  if(media.configured()){const result=await media.upload(buffer);return res.status(201).json({image_url:result.secure_url});}
+  if(process.env.VERCEL)return res.status(503).json({message:'Configure Cloudinary before uploading images.'});
   const extension = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[mime];
   const directory = path.resolve(__dirname, '../../public/uploads');
   const filename = `${randomUUID()}.${extension}`;
@@ -169,7 +175,7 @@ router.put('/admin/products/:id', body(productSchema), async (req, res) => {
   const { send_offer_notification, ...productInput } = req.input;
   const existing = await db('products').where({ id: req.params.id }).first();
   if (!existing) fail('Product not found.', 404);
-  const [product] = await db('products').where({ id: req.params.id }).update({ ...productInput, ingredients: JSON.stringify(productInput.ingredients), updated_at: db.raw('SYSUTCDATETIME()') }).returning('*');
+  const [product] = await db('products').where({ id: req.params.id }).update({ ...productInput, ingredients: JSON.stringify(productInput.ingredients), updated_at: databaseNow(db) }).returning('*');
   if (!product) fail('Product not found.', 404);
   const offerChanged = product.sale_price_egp != null && Number(existing.sale_price_egp) !== Number(product.sale_price_egp);
   const notification = send_offer_notification && offerChanged ? await notifications.offer(product) : null;
@@ -200,7 +206,7 @@ router.post('/admin/users', body(z.object({ email: z.email().max(254), name: tex
   const result = await db.transaction(async trx => {
     const existing = await trx('users').whereRaw('LOWER(email) = ?', [email]).first();
     if (existing) {
-      const [updated] = await trx('users').where({ id: existing.id }).update({ name: req.input.name, role: primaryRole(roles), is_active: true, updated_at: db.raw('SYSUTCDATETIME()') }).returning(['id', 'email', 'name', 'role', 'is_active']);
+      const [updated] = await trx('users').where({ id: existing.id }).update({ name: req.input.name, role: primaryRole(roles), is_active: true, updated_at: databaseNow(db) }).returning(['id', 'email', 'name', 'role', 'is_active']);
       await replaceUserRoles(trx, updated.id, roles);
       return { user: { ...updated, roles }, created: false };
     }
@@ -215,7 +221,7 @@ router.patch('/admin/users/:id', body(z.object({ roles: roleList, is_active: z.b
   const roles = req.input.roles;
   if (req.params.id === req.currentUser.id && (!roles.includes('admin') || !req.input.is_active)) fail('You cannot remove your own administrator access.');
   const user = await db.transaction(async trx => {
-    const [updated] = await trx('users').where({ id: req.params.id }).update({ role: primaryRole(roles), is_active: req.input.is_active, updated_at: db.raw('SYSUTCDATETIME()') }).returning(['id', 'email', 'name', 'role', 'is_active']);
+    const [updated] = await trx('users').where({ id: req.params.id }).update({ role: primaryRole(roles), is_active: req.input.is_active, updated_at: databaseNow(db) }).returning(['id', 'email', 'name', 'role', 'is_active']);
     if (!updated) fail('User not found.', 404);
     await replaceUserRoles(trx, updated.id, roles);
     return { ...updated, roles };
@@ -231,7 +237,7 @@ router.get('/admin/report', async (req, res) => res.json(await businessReports.r
 router.patch('/admin/orders/:id/assign', body(z.object({ driverId: uuid }).strict()), async (req, res) => res.json({ order: await orders.assign(req.params.id, req.input.driverId) }));
 router.get('/admin/sales', async (req, res) => {
   const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).parse(req.query.date || new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo' }).format(new Date()));
-  const row = await db('orders').whereRaw("CONVERT(date, created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Egypt Standard Time') = CONVERT(date, ?)", [date]).select(db.raw("COUNT(*) as orders, COALESCE(SUM(CASE WHEN status = 'DELIVERED' THEN total_egp ELSE 0 END), 0) as revenue, COALESCE(SUM(CASE WHEN status = 'CANCELLED' THEN 1 ELSE 0 END), 0) as cancelled")).first();
+  const row = await dateRange(db('orders'),db,'created_at',date,date).select(db.raw("COUNT(*) as orders, COALESCE(SUM(CASE WHEN status = 'DELIVERED' THEN total_egp ELSE 0 END), 0) as revenue, COALESCE(SUM(CASE WHEN status = 'CANCELLED' THEN 1 ELSE 0 END), 0) as cancelled")).first();
   res.json({ date, ...row });
 });
 module.exports = router;

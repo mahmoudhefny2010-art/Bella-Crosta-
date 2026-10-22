@@ -1,0 +1,11 @@
+.env
+.env.*
+.git
+.tools
+.vscode
+node_modules
+artifacts
+data
+tests
+pic
+*.log

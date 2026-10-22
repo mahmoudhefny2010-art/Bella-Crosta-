@@ -1,0 +1,3 @@
+/* Home page section spacing. */
+.home-intro{display:flex;flex-direction:column;min-height:calc(100svh - 76px)}
+.home-intro>.hero{flex:1;align-content:center}

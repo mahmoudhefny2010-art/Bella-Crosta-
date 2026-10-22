@@ -1,0 +1,17 @@
+.timeline{list-style:none;padding:0}.timeline li{padding:14px 0 14px 25px;border-inline-start:2px solid var(--line);color:var(--muted);position:relative}.timeline li:before{content:'';position:absolute;inset-inline-start:-6px;top:23px;width:10px;height:10px;background:var(--line);border-radius:50%}.timeline li.done{border-color:var(--gold);color:var(--cream)}.timeline li.done:before{background:var(--gold)}.timeline small{display:block;color:var(--muted)}.qr{display:block;width:min(260px,100%);margin:20px auto;border-radius:8px}.code{font-size:34px;letter-spacing:10px;text-align:center;font-family:monospace;color:var(--gold)}
+.order-edit-dialog{width:min(720px,calc(100vw - 28px));max-width:none;max-height:90dvh;padding:22px;border:1px solid var(--line);border-radius:16px;background:var(--panel);color:var(--cream);overflow:auto}
+.order-edit-dialog::backdrop{background:#0008;backdrop-filter:blur(3px)}
+.order-edit-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}
+.order-edit-header h3{margin:0;font-size:22px}.order-edit-header p{font-size:12px;margin-bottom:0}
+.order-edit-header>[data-close]{padding:0;width:36px;min-height:36px;flex-shrink:0;font-size:22px}
+.order-edit-line{padding:16px;margin-bottom:14px;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.order-edit-fields{display:grid;grid-template-columns:minmax(0,1fr) 90px auto;gap:12px;align-items:end}
+.order-edit-fields label{margin:0}.order-edit-fields input,.order-edit-fields select{margin-top:6px}
+.order-edit-options{display:flex;flex-wrap:wrap;gap:8px 16px;margin-block:12px}
+.order-edit-dialog .order-edit-choice{display:flex;align-items:center;gap:7px;font-size:12px;margin-block:8px;color:var(--cream)}
+.order-edit-choice input{margin:0;flex:0 0 auto}
+.order-edit-totals{display:grid;gap:8px;padding-block:16px;font-size:13px}
+.order-edit-dialog .order-edit-actions{display:flex;justify-content:flex-end;gap:10px;padding:16px 0 0;margin:0;border-top:1px solid var(--line)}
+.order-edit-dialog [data-edit-error]{color:var(--red);font-size:13px}
+#edit-order{margin-inline-end:10px}
+@media(max-width:540px){.order-edit-dialog{padding:16px}.order-edit-fields{grid-template-columns:minmax(0,1fr) 80px}.order-edit-fields>button{grid-column:1/-1;justify-self:start}}

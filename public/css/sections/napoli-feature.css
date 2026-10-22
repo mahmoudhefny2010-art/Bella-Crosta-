@@ -1,0 +1,11 @@
+/* Napoli feature section. */
+.napoli-section.section{padding-block:44px}
+.napoli-section .split{width:min(1040px,90vw);grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:clamp(24px,4vw,48px)}
+.napoli-section .assembly-photo{display:block;width:100%;max-width:440px;height:clamp(230px,40svh,320px);object-fit:cover;object-position:center;border-radius:16px;justify-self:center}
+.napoli-section .split>div{min-width:0;max-width:430px}
+.napoli-section .eyebrow{font-size:9px;letter-spacing:2px}
+.napoli-section h2{font-size:clamp(27px,2.8vw,36px);line-height:1.15;letter-spacing:-.8px;margin:12px 0 16px;text-wrap:balance}
+.napoli-section p{font-size:12px;line-height:1.8;margin:0}
+.napoli-section ol{list-style:none;padding:0;display:flex;gap:6px;flex-wrap:wrap;margin:18px 0}
+.napoli-section li{border:1px solid var(--line);border-radius:20px;font-size:9px;line-height:1.5;padding:5px 10px;color:var(--muted);background:var(--panel)}
+.napoli-section .button{font-size:11px;min-height:40px;padding:9px 15px}

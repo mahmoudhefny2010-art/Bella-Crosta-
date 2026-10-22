@@ -1,0 +1,20 @@
+[Unit]
+Description=Bella Crosta ordering application
+After=network.target
+
+[Service]
+Type=simple
+User=bella-crosta
+Group=bella-crosta
+WorkingDirectory=/opt/bella-crosta
+EnvironmentFile=/etc/bella-crosta.env
+Environment=NODE_ENV=production
+Environment=HOST=127.0.0.1
+ExecStart=/usr/bin/node /opt/bella-crosta/server/app.js
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

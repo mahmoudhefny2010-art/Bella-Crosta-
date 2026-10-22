@@ -1,0 +1,14 @@
+.map{height:320px;border-radius:8px;overflow:hidden;margin-block:20px;background:#201c19;z-index:1}.progress{height:4px;background:var(--line);border-radius:4px}.progress span{display:block;background:var(--red);height:100%;width:0;transition:width .2s}.step{opacity:.4;padding:10px 0}.step.current{opacity:1;color:var(--gold)}
+.delivery-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.delivery-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,360px),1fr));gap:18px;align-items:start}
+.delivery-order{min-width:0;margin-bottom:0;overflow-wrap:anywhere}
+.delivery-order .line h3{font-size:20px}.delivery-order p{font-size:13px}
+.delivery-confirm{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.delivery-confirm h4{margin:0 0 10px}.delivery-confirm input{margin-top:5px}
+.delivery-confirm .delivery-paid{display:flex;gap:8px;align-items:center;margin-block:16px;color:var(--cream)}
+.delivery-confirm .delivery-paid input{margin:0;flex:0 0 auto}
+.delivery-change{padding:10px;border:1px solid var(--line);border-radius:8px}
+.delivery-confirm .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.delivery-confirm .actions button{font-size:12px}
+.delivery-payment-status{font-weight:600}.delivery-payment-status.is-paid{color:var(--cream)}
+.delivery-pagination{display:flex;justify-content:center;align-items:center;gap:12px;margin-top:24px}

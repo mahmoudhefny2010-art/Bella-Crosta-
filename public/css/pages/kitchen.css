@@ -1,0 +1,32 @@
+.kitchen-page{width:min(1240px,92vw);padding-block:28px 48px}
+.kitchen-page>h1{font-family:Poppins,Cairo,sans-serif;font-size:30px;font-weight:600;letter-spacing:-.5px;margin:10px 0 22px}
+.kitchen-board{min-width:0}
+.kitchen-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px;padding:12px 16px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.kitchen-toolbar>span{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted)}
+.kitchen-toolbar strong,.kitchen-count{display:inline-grid;place-items:center;min-width:28px;min-height:28px;padding:2px 8px;background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--cream);font:600 12px Poppins,Cairo,sans-serif}
+.kitchen-toolbar #sound{font-size:12px;padding:8px 12px;min-height:36px}
+.kitchen-toolbar #sound[aria-pressed=true]{color:var(--red);border-color:var(--red)}
+.kitchen-board .kitchen-active{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start;overflow:visible;padding:0;margin:0}
+.kitchen-board .column{min-width:0;min-height:180px;padding:16px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.kitchen-column-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:14px}
+.kitchen-column-heading h3{font:600 15px/1.4 Poppins,Cairo,sans-serif;margin:0;color:var(--cream)}
+.kitchen-board [data-stage=PLACED] .kitchen-count{color:var(--red);background:color-mix(in srgb,var(--red) 7%,var(--panel))}
+.kitchen-board [data-stage=PREPARING] .kitchen-count{color:var(--gold);background:color-mix(in srgb,var(--gold) 8%,var(--panel))}
+.kitchen-column-empty{padding:20px 6px;margin:0;text-align:center;font-size:12px;line-height:1.6;color:var(--muted)}
+.kitchen-board .order-card{padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--bg);margin-bottom:12px;overflow-wrap:anywhere}
+.kitchen-board .order-card:last-child{margin-bottom:0}
+.kitchen-board .order-card h4{margin:0 0 8px;font:600 14px/1.5 Poppins,Cairo,sans-serif}
+.kitchen-board .order-card p{font-size:12px;line-height:1.65;margin-block:8px}
+.kitchen-board .order-card .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.kitchen-board .order-card button{min-height:36px;padding:7px 12px;font-size:12px}
+.kitchen-done{margin-top:22px;padding:18px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.kitchen-done-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:16px;border-bottom:1px solid var(--line);padding-bottom:12px}
+.kitchen-done-heading h3{display:flex;align-items:center;gap:10px;margin:0;font:600 17px/1.4 Poppins,Cairo,sans-serif}
+.kitchen-done-heading p{margin:0;font-size:12px;color:var(--muted)}
+.kitchen-done-orders{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:14px}
+.kitchen-done-orders .order-card{margin:0}
+.kitchen-done-empty{grid-column:1/-1;margin:0;padding:20px;text-align:center;font-size:12px;color:var(--muted);border:1px dashed var(--line);border-radius:8px}
+@media(max-width:740px){.kitchen-page{padding-top:24px}.kitchen-page>h1{font-size:26px}.kitchen-board .kitchen-active{grid-template-columns:1fr}.kitchen-board .column{min-height:0}.kitchen-column-empty{padding:14px 6px}.kitchen-done{padding:16px}.kitchen-done-heading{align-items:flex-start;flex-direction:column;gap:6px}}
+@media(max-width:380px){.kitchen-toolbar{align-items:flex-start;flex-direction:column;gap:10px}}
+.kitchen-pagination{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px;margin-top:16px;padding-top:12px;border-top:1px solid var(--line);font-size:12px}
+.kitchen-pagination button{min-height:34px;padding:6px 10px;font-size:12px}

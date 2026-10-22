@@ -1,0 +1,56 @@
+{
+  "name": "italian",
+  "version": "1.0.0",
+  "description": "Bella Crosta ordering and delivery website",
+  "main": "server/app.js",
+  "scripts": {
+    "dev": "node scripts/sqlserver-dev.cjs",
+    "dev:app": "node --watch server/app.js",
+    "start": "node server/app.js",
+    "seed": "knex seed:run --knexfile server/db/knexfile.js",
+    "admin:create": "node scripts/admin.cjs",
+    "test": "node --test tests/workflow.test.cjs tests/google-errors.test.cjs tests/website-content.test.cjs",
+    "test:admin-owner": "node tests/admin-owner.integration.cjs",
+    "test:integration": "node tests/integration.cjs",
+    "test:browser": "node tests/browser.cjs",
+    "db:migrate": "knex migrate:latest --knexfile server/db/knexfile.js",
+    "db:rollback": "knex migrate:rollback --knexfile server/db/knexfile.js",
+    "db:seed": "knex seed:run --knexfile server/db/knexfile.js",
+    "db:setup": "node scripts/setup-sqlserver.cjs",
+    "db:status": "node scripts/sqlserver-status.cjs",
+    "db:import": "node scripts/import-sqlserver.cjs"
+  },
+  "keywords": [
+    "pizza",
+    "express",
+    "sql-server",
+    "home-kitchen"
+  ],
+  "author": "Home Kitchen Couple",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^7.1.5",
+    "helmet": "^7.1.0",
+    "html5-qrcode": "^2.3.8",
+    "jsonwebtoken": "^9.0.3",
+    "knex": "3.1.0",
+    "leaflet": "^1.9.4",
+    "msnodesqlv8": "5.6.0",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.8.4",
+    "tedious": "^20.3.8",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "playwright": "^1.64.1",
+    "sharp": "^0.35.1",
+    "socket.io-client": "^4.8.4"
+  }
+}

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0D0908"><meta name="description" content="Bella Crosta. French Passion. Egyptian Heart. Italian Crust. Fresh Neapolitan pizza, delivered in Egypt.">
+  <title>Bella Crosta · Neapolitan Pizza</title>
+  <script src="/js/theme.js"></script>
+  <link rel="manifest" href="/manifest.json"><link rel="icon" href="/assets/logo.png" type="image/png"><link rel="apple-touch-icon" href="/assets/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Cairo:wght@400;600;800&family=Fraunces:wght@400;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/vendor/leaflet/leaflet.css"><link rel="stylesheet" href="/css/bella.css">
+  <link rel="stylesheet" href="/css/polish.css?v=38">
+  <script defer src="/vendor/leaflet/leaflet.js"></script><script defer src="/socket.io/socket.io.js"></script>
+  <script type="module" src="/js/v2/app.js"></script>
+</head>
+<body>
+  <div id="loading-screen" class="loading-screen" role="status" aria-live="polite">
+    <img src="/assets/logo.png" alt="Bella Crosta" width="96" height="96">
+    <span class="loading-spinner" aria-hidden="true"></span>
+    <p>Firing up the oven…</p>
+  </div>
+  <a class="skip-link" href="#app">Skip to content</a>
+  <header class="header"><a class="brand navbar-brand" href="/" aria-label="Bella Crosta home"><img src="/assets/logo.png" alt="Bella Crosta" width="64" height="64" fetchpriority="high"></a><nav id="navigation" aria-label="Main navigation"></nav><div class="header-actions"><button id="theme-toggle" type="button" aria-label="Switch to light mode" aria-pressed="false"></button><button id="language" class="language-switch" type="button" aria-label="Switch language" title="Switch language"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg><span id="language-label">&#1593;&#1585;&#1576;&#1610;</span></button><a class="cart-link" href="/cart" id="cart-link" aria-label="Your bag" title="Your bag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h14l1 14H4L5 7Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg><span id="bag-count">0</span></a><a class="signin-link" id="signin-link" href="/login" aria-label="Sign in" title="Sign in" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></a><div class="account-menu" id="account-menu" hidden><button class="account-toggle" id="account-toggle" type="button" aria-label="My account" aria-expanded="false" aria-haspopup="true" aria-controls="account-popover" title="My account"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></button><section class="account-popover" id="account-popover" aria-label="Account menu" hidden></section></div><button id="mobile-nav" aria-label="Open navigation" aria-expanded="false">☰</button></div></header>
+  <main id="app" tabindex="-1"><p class="loading">Heating the oven…</p></main>
+  <a id="quick-bag" class="quick-bag" href="/cart" hidden></a>
+  <footer>
+    <div class="footer-main">
+      <div class="footer-identity">
+        <a class="brand footer-brand" href="/" aria-label="Bella Crosta home">
+          <img src="/assets/logo.png" alt="Bella Crosta" width="56" height="56" loading="lazy">
+        </a>
+        <p id="tagline">French Passion. Egyptian Heart. Italian Crust.</p>
+      </div>
+      <div class="footer-meta">
+        <a class="footer-phone" href="tel:+201031252519" dir="ltr">+20 103 125 2519</a>
+        <span>© 2026 Bella Crosta</span>
+        <button id="install" hidden>Install app</button>
+      </div>
+    </div>
+    <div class="footer-credits" dir="ltr">
+      <span>Designed &amp; developed by</span>
+      <a href="https://www.linkedin.com/in/mahmoud-hefny-1264763b0" target="_blank" rel="noopener noreferrer"><strong>Mahmoud Mohamed Hefny</strong></a>
+      <span>&amp;</span>
+      <a href="https://www.linkedin.com/in/rozan-tarek/" target="_blank" rel="noopener noreferrer"><strong>Rozan Tarek Kotb</strong></a>
+    </div>
+  </footer>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <dialog id="engagement-dialog" class="engagement-dialog" aria-labelledby="engagement-title"></dialog>
+</body></html>

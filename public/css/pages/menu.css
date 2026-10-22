@@ -1,0 +1,7 @@
+/* Menu page search and filters. */
+.menu-toolbar{display:flex;align-items:center;gap:15px;justify-content:space-between;margin:0 0 25px;flex-wrap:wrap}
+.menu-toolbar .search{max-width:340px;flex:1;min-width:180px;border-radius:10px}
+.menu-toolbar .filters{margin:0;gap:7px}
+.filters button{border-radius:30px;font-size:11px;padding:9px 16px;min-height:39px}
+.filters button.active{background:var(--red);border-color:var(--red);color:#fff}
+.menu-results{font-size:11px;color:var(--muted);margin:0 0 18px}

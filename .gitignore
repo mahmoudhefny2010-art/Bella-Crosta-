@@ -1,0 +1,15 @@
+node_modules
+.tools/
+data/.dev-secret
+data/backups
+artifacts
+.env
+.env.*
+!.env.example
+.vercel/
+.vscode/
+*.log
+*.pem
+*.key
+.DS_Store
+npm-debug.log*

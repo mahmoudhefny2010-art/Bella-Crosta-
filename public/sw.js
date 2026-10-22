@@ -1,4 +1,4 @@
-const VERSION = 'bella-v2-85';
+const VERSION = 'bella-v2-86';
 const SHELL = [
   '/offline.html', '/error.html', '/500.html', '/js/theme.js', '/js/status-page.js', '/css/bella.css', '/css/polish.css', '/css/pages/home.css', '/css/pages/menu.css', '/css/pages/cart.css',
   '/css/pages/checkout.css', '/css/pages/orders.css', '/css/pages/addresses.css', '/css/pages/builder.css', '/css/pages/kitchen.css',

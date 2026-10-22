@@ -246,6 +246,11 @@ function hideLoadingScreen() {
 }
 const onboardingKey = 'bella_first_visit_onboarding_v2';
 let onboardingTimer;
+function oneSignalOriginMatchesPage() {
+  if (!config?.oneSignalOrigin) return true;
+  try { return new URL(config.oneSignalOrigin).origin === location.origin; }
+  catch { return false; }
+}
 function onboardingCopy() {
   return language === 'ar' ? {
     title: '\u0623\u0647\u0644\u0627\u064b \u0628\u0643 \u0641\u064a Bella Crosta',
@@ -277,7 +282,7 @@ function openWelcome() {
   const permission = 'Notification' in window ? Notification.permission : 'unsupported';
   const notifyIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>';
   const homeIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1z"/></svg>';
-  const notificationConfigured = Boolean(config?.oneSignalAppId) && (!config.oneSignalOrigin || config.oneSignalOrigin === location.origin);
+  const notificationConfigured = Boolean(config?.oneSignalAppId) && oneSignalOriginMatchesPage();
   const canNotify = permission === 'default' && notificationConfigured;
   const notifyButton = permission === 'granted'
     ? `<button class="engagement-secondary" type="button" disabled>${notifyIcon}${copy.notifyReady}</button>`
@@ -301,7 +306,7 @@ async function syncPushSubscription() {
 }
 async function push() {
   if (!config.oneSignalAppId || !('Notification' in window)) { promptInstallSoon(); return; }
-  if(config.oneSignalOrigin&&config.oneSignalOrigin!==location.origin){promptInstallSoon();return;}
+  if (!oneSignalOriginMatchesPage()) { promptInstallSoon(); return; }
   try {
     await loadScript('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js');
     window.OneSignalDeferred = window.OneSignalDeferred || [];

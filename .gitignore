@@ -13,3 +13,4 @@ data/
 *.key
 .DS_Store
 npm-debug.log*
+*.rar

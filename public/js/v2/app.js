@@ -92,6 +92,7 @@ function renderNav() {
   signInLink.hidden = Boolean(user);
   signInLink.setAttribute('aria-label', t('Sign in'));
   signInLink.title = t('Sign in');
+  $('#signin-label').textContent = t('Sign in');
   const accountMenu = $('#account-menu');
   const accountToggle = $('#account-toggle');
   const accountPopover = $('#account-popover');

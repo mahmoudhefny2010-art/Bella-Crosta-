@@ -21,10 +21,10 @@ button,.button{border-radius:10px;min-height:42px;transition:background .18s,bor
 .header nav button{font-size:10px;min-height:32px;border-color:transparent;padding:4px 9px}
 .header-actions button{border-color:transparent;min-height:38px;min-width:38px}
 .header-actions button:hover{background:var(--panel);border-color:var(--line)}
-.header-actions .signin-link{display:grid;place-items:center;width:38px;height:38px;flex:0 0 38px;border-radius:9px;color:var(--cream);transition:background .18s,border-color .18s}
-.header-actions .signin-link svg{width:21px;height:21px;display:block}
-.header-actions .signin-link:hover{background:var(--panel);color:var(--red)}
-.header-actions .signin-link[hidden]{display:none}
+.header-actions .signin-link{display:inline-flex;align-items:center;justify-content:center;gap:7px;width:auto;min-width:94px;height:38px;min-height:38px;padding:0 12px;flex:0 0 auto;border:1px solid var(--line);border-radius:9px;color:var(--cream);font-size:12px;font-weight:600;white-space:nowrap;transition:background .18s,border-color .18s}
+.header-actions .signin-link svg{width:18px;height:18px;display:block;flex:0 0 auto}
+.header-actions .signin-link:hover{background:var(--panel);border-color:var(--red);color:var(--red)}
+.signin-link[hidden],.account-menu[hidden]{display:none!important}
 .eyebrow{font-size:10px;letter-spacing:2.5px;line-height:1.8}
 .page{padding-block:42px 72px}
 .page>h1{font-family:Fraunces,serif;text-transform:none;font-size:clamp(36px,5vw,62px);letter-spacing:-1.5px;margin:14px 0}
@@ -142,10 +142,11 @@ html[lang=ar] .engagement-card h2{font-family:Cairo,sans-serif;letter-spacing:0;
 .mobile-nav-tools #theme-toggle svg{width:20px;height:20px}
 .mobile-nav-tools .language-switch{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:7px 10px;border:1px solid var(--line);border-radius:10px;font-size:11px}
 .mobile-nav-tools .language-switch svg{width:18px;height:18px}
-.mobile-nav-tools .signin-link,.mobile-nav-tools .logout-icon{display:grid;place-items:center;width:40px;height:40px;min-width:40px;min-height:40px;padding:0;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--cream)}
+.mobile-nav-tools .signin-link{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:auto;min-width:94px;height:40px;min-height:40px;padding:0 10px;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--cream);font-size:11px;font-weight:600;white-space:nowrap}
+.mobile-nav-tools .logout-icon{display:grid;place-items:center;width:40px;height:40px;min-width:40px;min-height:40px;padding:0;border:1px solid var(--line);border-radius:10px;background:transparent;color:var(--cream)}
 .mobile-nav-tools .signin-link[hidden],.mobile-nav-tools .logout-icon[hidden]{display:none}
 .mobile-nav-tools .signin-link svg,.mobile-nav-tools .logout-icon svg{width:20px;height:20px}
-@media(max-width:380px){.mobile-nav-tools{gap:6px;padding-inline:4px}.mobile-nav-tools #language-label{display:none}.mobile-nav-tools #theme-toggle,.mobile-nav-tools #language,.mobile-nav-tools .signin-link,.mobile-nav-tools .logout-icon{width:36px;min-width:36px;height:36px;min-height:36px;padding:6px}}
+@media(max-width:380px){.mobile-nav-tools{gap:6px;padding-inline:4px}.mobile-nav-tools #language-label{display:none}.mobile-nav-tools #theme-toggle,.mobile-nav-tools #language,.mobile-nav-tools .logout-icon{width:36px;min-width:36px;height:36px;min-height:36px;padding:6px}.mobile-nav-tools .signin-link{min-width:84px;height:36px;min-height:36px;padding-inline:8px;font-size:10px}}
 .map-lookup-credit{display:block;margin:-12px 0 14px;color:var(--muted);font-size:10px;line-height:1.5}.map-lookup-credit a{color:var(--red);text-decoration:underline;text-underline-offset:2px}
 @media(max-width:860px){.header nav{inset:76px max(12px,env(safe-area-inset-right)) auto auto;width:min(50vw,280px);min-width:min(180px,calc(100vw - 24px));max-height:calc(100dvh - 88px - env(safe-area-inset-bottom));max-width:none;margin:0;padding:10px;border-radius:16px;transform:none}.header nav.open{max-height:calc(100dvh - 88px - env(safe-area-inset-bottom))}}
 @media(max-width:740px){.header nav{top:68px}.header nav.open{max-height:calc(100dvh - 80px - env(safe-area-inset-bottom))}}

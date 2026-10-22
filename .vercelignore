@@ -4,8 +4,9 @@
 .tools
 .vscode
 node_modules
+*.rar
 artifacts
-data
+data    
 tests
 pic
 *.log

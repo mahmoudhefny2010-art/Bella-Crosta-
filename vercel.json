@@ -4,7 +4,7 @@
   "buildCommand": "node scripts/build-vercel.cjs",
   "installCommand": "npm ci --omit=optional",
   "outputDirectory": "public",
-  "functions": {"api/index.js": {"maxDuration": 60, "includeFiles": ["server/**", "public/pages/**", "public/manifest.json", "public/assets/**", "public/uploads/**"]}},
+  "functions": {"api/index.js": {"maxDuration": 60, "includeFiles": "{server/**,public/**}"}},
   "routes": [
     {"src": "/manifest.json", "dest": "/api/index"},
     {"src": "/api/.*", "dest": "/api/index"},

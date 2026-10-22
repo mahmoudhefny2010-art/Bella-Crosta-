@@ -244,23 +244,29 @@ function hideLoadingScreen() {
   screen.classList.add('is-leaving');
   setTimeout(() => { screen.hidden = true; }, 380);
 }
-const onboardingKey = 'bella_first_visit_onboarding_v1';
+const onboardingKey = 'bella_first_visit_onboarding_v2';
 let onboardingTimer;
 function onboardingCopy() {
   return language === 'ar' ? {
     title: '\u0623\u0647\u0644\u0627\u064b \u0628\u0643 \u0641\u064a Bella Crosta',
     body: '\u0641\u0639\u0651\u0644 \u0625\u0634\u0639\u0627\u0631\u0627\u062a \u0627\u0644\u0637\u0644\u0628\u0627\u062a \u0648\u062b\u0628\u0651\u062a \u0627\u0644\u062a\u0637\u0628\u064a\u0642 \u0644\u0645\u062a\u0627\u0628\u0639\u0629 \u0637\u0644\u0628\u0643 \u0648\u0641\u062a\u062d \u0627\u0644\u0645\u0648\u0642\u0639 \u0628\u0633\u0631\u0639\u0629.',
     notify: '\u0641\u0639\u0651\u0644 \u0625\u0634\u0639\u0627\u0631\u0627\u062a \u0627\u0644\u0637\u0644\u0628\u0627\u062a', install: '\u062b\u0628\u0651\u062a \u0627\u0644\u062a\u0637\u0628\u064a\u0642', later: '\u0645\u0634 \u062f\u0644\u0648\u0642\u062a\u064a', done: '\u062a\u0645\u0627\u0645',
-    notifyReady: '\u0627\u0644\u0625\u0634\u0639\u0627\u0631\u0627\u062a \u0645\u0641\u0639\u0651\u0644\u0629', notifyUnavailable: '\u0627\u0644\u0625\u0634\u0639\u0627\u0631\u0627\u062a \u063a\u064a\u0631 \u0645\u062a\u0627\u062d\u0629 \u062d\u0627\u0644\u064a\u064b\u0627', installed: '\u0627\u0644\u062a\u0637\u0628\u064a\u0642 \u0645\u062b\u0628\u0651\u062a',
-    hint: '\u0627\u0644\u0645\u062a\u0635\u0641\u062d \u0633\u064a\u0637\u0644\u0628 \u0625\u0630\u0646\u0643 \u0628\u0639\u062f \u0636\u063a\u0637\u0643. \u062a\u0642\u062f\u0631 \u062a\u062a\u0627\u0628\u0639 \u0637\u0644\u0628\u0643 \u0628\u0625\u0634\u0639\u0627\u0631\u0627\u062a \u0648\u062a\u0636\u064a\u0641 \u0627\u0644\u0645\u0648\u0642\u0639 \u0644\u0634\u0627\u0634\u062a\u0643.',
-    installHint: '\u0627\u0641\u062a\u062d \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0645\u062a\u0635\u0641\u062d \u0648\u0627\u062e\u062a\u0631 \u00ab\u0625\u0636\u0627\u0641\u0629 \u0644\u0644\u0634\u0627\u0634\u0629 \u0627\u0644\u0631\u0626\u064a\u0633\u064a\u0629\u00bb \u0625\u0630\u0627 \u0644\u0645 \u064a\u0638\u0647\u0631 \u062a\u0623\u0643\u064a\u062f \u0627\u0644\u062a\u062b\u0628\u064a\u062a.',
+    notifyReady: '\u0627\u0644\u0625\u0634\u0639\u0627\u0631\u0627\u062a \u0645\u0641\u0639\u0651\u0644\u0629', notifyUnavailable: '\u0627\u0644\u0625\u0634\u0639\u0627\u0631\u0627\u062a \u063a\u064a\u0631 \u0645\u062a\u0627\u062d\u0629', notifyBlocked: '\u0627\u0644\u0625\u0634\u0639\u0627\u0631\u0627\u062a \u0645\u062a\u0648\u0642\u0641\u0629 \u0645\u0646 \u0625\u0639\u062f\u0627\u062f\u0627\u062a \u0627\u0644\u0645\u062a\u0635\u0641\u062d', notifyHelp: '\u0625\u0632\u0627\u064a \u0623\u0641\u0639\u0651\u0644\u0647\u0627\u061f', unsupported: '\u0627\u0644\u0645\u062a\u0635\u0641\u062d \u0644\u0627 \u064a\u062f\u0639\u0645 \u0625\u0634\u0639\u0627\u0631\u0627\u062a \u0627\u0644\u0648\u064a\u0628', installed: '\u0627\u0644\u062a\u0637\u0628\u064a\u0642 \u0645\u062b\u0628\u0651\u062a',
+    hint: '\u0627\u0644\u0645\u062a\u0635\u0641\u062d \u0633\u064a\u0637\u0644\u0628 \u0625\u0630\u0646\u0643 \u0628\u0639\u062f \u0636\u063a\u0637\u0643.',
+    notifyBlockedHint: '\u0627\u0636\u063a\u0637 \u0623\u064a\u0642\u0648\u0646\u0629 \u0625\u0639\u062f\u0627\u062f\u0627\u062a \u0627\u0644\u0645\u0648\u0642\u0639 \u062c\u0646\u0628 \u0639\u0646\u0648\u0627\u0646 \u0627\u0644\u0645\u0648\u0642\u0639\u060c \u0648\u0627\u062e\u062a\u0631 \u0625\u0639\u062f\u0627\u062f\u0627\u062a \u0627\u0644\u0645\u0648\u0642\u0639 \u062b\u0645 \u0627\u0644\u0625\u0634\u0639\u0627\u0631\u0627\u062a > \u0633\u0645\u0627\u062d. \u0627\u0631\u062c\u0639 \u0644\u0644\u0635\u0641\u062d\u0629 \u0648\u062d\u062f\u0651\u062b\u0647\u0627.',
+    notifySetupHint: '\u0627\u0641\u062a\u062d \u0627\u0644\u0645\u0648\u0642\u0639 \u0639\u0644\u0649 bella-crosta-eg.vercel.app \u062b\u0645 \u062d\u062f\u0651\u062b \u0627\u0644\u0635\u0641\u062d\u0629.',
+    notifyUnsupportedHint: '\u0627\u0641\u062a\u062d \u0627\u0644\u0645\u0648\u0642\u0639 \u0641\u064a Chrome \u0623\u0648 Edge \u0644\u062a\u0641\u0639\u064a\u0644 \u0627\u0644\u0625\u0634\u0639\u0627\u0631\u0627\u062a.',
+    installHint: '\u0645\u0646 Chrome \u0627\u0636\u063a\u0637 \u22ee \u062b\u0645 Install app. \u0645\u0646 iPhone Safari: \u0645\u0634\u0627\u0631\u0643\u0629 \u2192 Add to Home Screen.',
     laterBody: '\u0645\u0634 \u0647\u0646\u0637\u0644\u0628 \u0627\u0644\u0625\u0630\u0646 \u062a\u0627\u0646\u064a. \u064a\u0645\u0643\u0646\u0643 \u062a\u0641\u0639\u064a\u0644 \u0627\u0644\u0625\u0634\u0639\u0627\u0631\u0627\u062a \u0623\u0648 \u0627\u0644\u062a\u062b\u0628\u064a\u062a \u0644\u0627\u062d\u0642\u064b\u0627 \u0645\u0646 \u0642\u0627\u0626\u0645\u0629 \u0627\u0644\u0645\u062a\u0635\u0641\u062d.'
   } : {
     title: 'Welcome to Bella Crosta', body: 'Get order updates with notifications and add Bella Crosta to your home screen for quick access.',
     notify: 'Enable order notifications', install: 'Install the app', later: 'Not now', done: 'Got it',
-    notifyReady: 'Notifications are enabled', notifyUnavailable: 'Notifications are unavailable right now', installed: 'App installed',
+    notifyReady: 'Notifications are enabled', notifyUnavailable: 'Notifications are unavailable', notifyBlocked: 'Notifications are blocked by your browser', notifyHelp: 'How to enable them', unsupported: 'This browser does not support web notifications', installed: 'App installed',
     hint: 'Your browser asks for notification permission only after you choose to enable it.',
-    installHint: 'If the install prompt does not appear, open your browser menu and choose “Install app” or “Add to Home Screen”.',
+    notifyBlockedHint: 'Open the site controls next to the address bar, choose Site settings > Notifications > Allow, then reload this page.',
+    notifySetupHint: 'Open https://bella-crosta-eg.vercel.app and reload this page to enable notifications on the production site.',
+    notifyUnsupportedHint: 'Open this site in Chrome or Edge to use web notifications.',
+    installHint: 'Chrome: open the browser menu and choose Install app. On iPhone Safari, tap Share > Add to Home Screen.',
     laterBody: 'No problem. We will not show this welcome again. You can enable notifications or install Bella Crosta later from your browser menu.'
   };
 }
@@ -271,17 +277,17 @@ function openWelcome() {
   const permission = 'Notification' in window ? Notification.permission : 'unsupported';
   const notifyIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>';
   const homeIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1z"/></svg>';
-  const canNotify = permission === 'default' && Boolean(config?.oneSignalAppId) && (!config.oneSignalOrigin || config.oneSignalOrigin === location.origin);
+  const notificationConfigured = Boolean(config?.oneSignalAppId) && (!config.oneSignalOrigin || config.oneSignalOrigin === location.origin);
+  const canNotify = permission === 'default' && notificationConfigured;
   const notifyButton = permission === 'granted'
     ? `<button class="engagement-secondary" type="button" disabled>${notifyIcon}${copy.notifyReady}</button>`
     : canNotify
       ? `<button class="primary" type="button" data-onboarding="notify">${notifyIcon}${copy.notify}</button>`
-      : `<button class="engagement-secondary" type="button" disabled>${notifyIcon}${copy.notifyUnavailable}</button>`;
+      : `<button class="engagement-secondary" type="button" data-onboarding="notify-help" data-reason="${permission === 'denied' ? 'blocked' : permission === 'unsupported' ? 'unsupported' : 'setup'}">${notifyIcon}${permission === 'denied' ? copy.notifyBlocked : permission === 'unsupported' ? copy.unsupported : copy.notifyUnavailable}</button>`;
   const installButton = isInstalled()
     ? `<button class="engagement-secondary" type="button" disabled>${homeIcon}${copy.installed}</button>`
     : `<button class="engagement-secondary" type="button" data-onboarding="install">${homeIcon}${copy.install}</button>`;
   dialog.innerHTML = `<div class="engagement-card" dir="${ar ? 'rtl' : 'ltr'}"><button class="engagement-close" type="button" data-onboarding="later" aria-label="Close">&times;</button><div class="engagement-brand"><img src="/assets/logo.png" alt="Bella Crosta" width="64" height="64"></div><h2 id="engagement-title">${copy.title}</h2><p id="engagement-body">${copy.body}</p><div class="engagement-actions">${notifyButton}${installButton}<button class="engagement-secondary" type="button" data-onboarding="later">${copy.later}</button></div><span class="engagement-hint" id="engagement-hint">${copy.hint}</span></div>`;
-  localStorage.setItem(onboardingKey, '1');
   dialog.showModal();
 }
 function promptInstallSoon() {
@@ -444,6 +450,10 @@ engagementDialog.addEventListener('click', async e => {
     return;
   }
   if (action === 'done') { engagementDialog.close(); return; }
+  if (action === 'notify-help') {
+    $('#engagement-hint').textContent = copy[button.dataset.reason === 'blocked' ? 'notifyBlockedHint' : button.dataset.reason === 'unsupported' ? 'notifyUnsupportedHint' : 'notifySetupHint'];
+    return;
+  }
   button.disabled = true;
   if (action === 'notify') {
     try {
@@ -451,7 +461,12 @@ engagementDialog.addEventListener('click', async e => {
       else await Notification.requestPermission();
       await syncPushSubscription();
       if (Notification.permission === 'granted') { button.textContent = copy.notifyReady; toast('Notifications enabled'); }
-      else { button.textContent = copy.notifyUnavailable; }
+      else {
+        button.textContent = copy.notifyBlocked;
+        button.dataset.onboarding = 'notify-help';
+        button.dataset.reason = 'blocked';
+        button.disabled = false;
+      }
     } catch (error) { button.disabled = false; toast(error.message || 'Could not enable notifications'); }
     return;
   }

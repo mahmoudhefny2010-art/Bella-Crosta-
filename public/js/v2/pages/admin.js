@@ -75,6 +75,8 @@ async function admin(tab, editId) {
         toast(result.notification?.sent ? (result.notification.recipients ? 'Offer saved and notification sent.' : 'Offer saved, but no customers are subscribed to notifications.') : result.notification ? 'Offer saved, but notifications are not configured.' : 'Saved');
         // Refresh products so menu shows the new photo immediately
         try { ctx.products = (await api('/api/menu')).products; } catch {}
+        // Full reload so the menu page picks up the new photo
+        if ($('#product-image-url')?.value) { location.reload(); }
         await admin();
       } catch (error) {
         toast(error.message || 'Could not save product. Check the database connection and try again.');

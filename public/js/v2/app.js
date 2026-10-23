@@ -389,14 +389,23 @@ function scheduleLiveRefresh() {
   if (liveRefreshTimer || liveRefreshRunning) return;
   liveRefreshTimer = setTimeout(async()=>{
     liveRefreshTimer = null;
-    if (document.hidden || (path === '/delivery' && (scanner || document.activeElement?.closest('[data-confirm]')))) return;
+    if (document.hidden) return;
     liveRefreshPending = false; liveRefreshRunning = true;
     try { await renderRoute(path); } catch(error) { toast(error.message); }
     finally { liveRefreshRunning = false; if (liveRefreshPending) scheduleLiveRefresh(); }
   },400);
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden && liveRefreshPending)scheduleLiveRefresh();});
-document.addEventListener('focusout',()=>{if(path === '/delivery' && liveRefreshPending)scheduleLiveRefresh();});
+document.addEventListener('focus',()=>{if(!document.hidden && liveRefreshPending)scheduleLiveRefresh();});
+
+let touchStartY = 0;
+document.addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; }, { passive: true });
+document.addEventListener('touchmove', e => {
+  if (window.scrollY <= 0 && e.touches[0].clientY - touchStartY > 70) {
+    touchStartY = -9999;
+    location.reload();
+  }
+}, { passive: false });
 async function init() {
   const data = await Promise.all([api('/api/menu'), api('/api/me'), api('/api/config'), api('/api/content').catch(() => null)]);
   products = data[0].products; user = data[1].user; config = data[2];
@@ -407,7 +416,7 @@ async function init() {
     socket = createLiveClient(config,api);
     socket.on('order', data => {
       if (path === '/kitchen' && data.status === 'PLACED' && Date.now()-lastOrderBeep>1000) { lastOrderBeep=Date.now();beep(); }
-      if (['/kitchen','/orders','/delivery'].includes(path) || (path === '/track' && data.id === activeOrder?.id)) scheduleLiveRefresh();
+      scheduleLiveRefresh();
     });
     socket.on('location', data => { if (data.orderId === activeOrder?.id) updateDriver(data); });
     socket.on('connect', () => { if (activeOrder) { socket.emit('watch', activeOrder.id); renderRoute('/track').catch(e => toast(e.message)); } });
@@ -440,20 +449,20 @@ document.addEventListener('click', async e => {
   if (!pushSdk) { toast('Notifications are loading, please try again'); return; }
   button.disabled = true;
   try {
-    const subscription = pushSdk.User?.PushSubscription;
-    if (subscription?.optedIn) {
-      await subscription.optOut();
-    } else {
-      if (Notification.permission !== 'granted') await pushSdk.Notifications.requestPermission();
-      if (Notification.permission === 'granted') {
-        if (subscription) await subscription.optIn();
-        else await new Promise(r => setTimeout(r, 800));
-      }
+    if (pushSdk.Notifications?.requestPermission) await pushSdk.Notifications.requestPermission();
+    else await Notification.requestPermission();
+    if (Notification.permission !== 'granted') {
+      toast('Notification permission was not granted');
+      return;
     }
+    await new Promise(r => setTimeout(r, 1000));
+    const subscription = pushSdk.User?.PushSubscription;
+    if (subscription && !subscription.optedIn) await subscription.optIn();
     await syncPushSubscription();
     updateNotificationPreference();
-  } catch (error) { toast(error.message || 'Could not update notification settings'); }
-  finally { updateNotificationPreference(); }
+    if (pushSdk.User?.PushSubscription?.optedIn) toast('Notifications enabled');
+  } catch (error) { toast(error.message || 'Could not enable notifications'); }
+  finally { button.disabled = false; updateNotificationPreference(); }
 });
 document.addEventListener('click', async e => {
   if (e.target.closest('#logout')) {

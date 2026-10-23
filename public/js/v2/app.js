@@ -329,7 +329,7 @@ async function push() {
     await new Promise(resolve => window.OneSignalDeferred.push(async OneSignal => {
       try {
         pushSdk = OneSignal;
-        await OneSignal.init({ appId: config.oneSignalAppId, serviceWorkerPath: '/OneSignalSDKWorker.js', serviceWorkerParam: { scope: '/' }, allowLocalhostAsSecureOrigin: true });
+        await OneSignal.init({ appId: config.oneSignalAppId, serviceWorkerPath: '/sw.js', serviceWorkerParam: { scope: '/' }, allowLocalhostAsSecureOrigin: true });
         if (user) await OneSignal.login(user.id);
         OneSignal.User?.PushSubscription?.addEventListener?.('change', () => { syncPushSubscription(); updateNotificationPreference(); });
         await syncPushSubscription();

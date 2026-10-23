@@ -46,11 +46,12 @@ async function admin(tab, editId) {
       try {
         const response = await fetch('/api/admin/uploads', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': file.type }, body: file });
         const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data.message || `Upload failed (${response.status})`);
+        if (!response.ok) throw new Error(data.message || `Upload failed (HTTP ${response.status})`);
+        if (!data?.image_url) throw new Error('Upload succeeded but no image URL returned from server.');
         $('#product-image-url').value = data.image_url;
         const img = document.createElement('img'); img.src = data.image_url; img.alt = productPhotoLabel; img.loading = 'lazy'; const caption = document.createElement('span'); caption.textContent = file.name; imagePreview.replaceChildren(img, caption); imagePreview.hidden = false;
         toast(uploadedPhotoLabel);
-      } catch (error) { toast(error.message); }
+      } catch (error) { toast(error.message || 'Photo upload failed.'); }
       finally { input.disabled = false; input.value = ''; }
     });
     document.querySelectorAll('[data-edit-product]').forEach(b => b.addEventListener('click', () => admin('products', b.dataset.editProduct).catch(e => toast(e.message))));

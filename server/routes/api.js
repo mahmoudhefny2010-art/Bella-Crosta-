@@ -175,6 +175,10 @@ router.get('/admin/overview', async (req, res) => {
   res.json({ products: Number(products.total), activeOrders: Number(activeOrders.total), staff: Number(staff.total), revenue: Number(sales.revenue || 0), date: today });
 });
 router.get('/admin/products', async (req, res) => res.json({ products: await db('products').orderBy('name'), categories: await db('categories').orderBy('name') }));
+router.get('/admin/uploads/test', async (req, res) => {
+  const configured = Boolean(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET);
+  res.json({ configured, cloud_name: process.env.CLOUDINARY_CLOUD_NAME ? 'set' : 'missing', has_api_key: Boolean(process.env.CLOUDINARY_API_KEY), has_secret: Boolean(process.env.CLOUDINARY_API_SECRET) });
+});
 router.post('/admin/uploads', express.raw({ type: ['image/jpeg', 'image/png', 'image/webp'], limit: '4mb' }), async (req, res) => {
   const mime = req.get('content-type')?.split(';')[0].trim().toLowerCase();
   const buffer = req.body;
@@ -184,14 +188,22 @@ router.post('/admin/uploads', express.raw({ type: ['image/jpeg', 'image/png', 'i
     (mime === 'image/webp' && buffer.length >= 12 && buffer.toString('ascii', 0, 4) === 'RIFF' && buffer.toString('ascii', 8, 12) === 'WEBP')
   );
   if (!valid) return res.status(415).json({ message: 'Choose a valid JPG, PNG or WebP image.' });
-  if(media.configured()){const result=await media.upload(buffer);return res.status(201).json({image_url:result.secure_url});}
-  if(process.env.VERCEL)return res.status(503).json({message:'Configure Cloudinary before uploading images.'});
-  const extension = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[mime];
-  const directory = path.resolve(__dirname, '../../public/uploads');
-  const filename = `${randomUUID()}.${extension}`;
-  await fs.mkdir(directory, { recursive: true });
-  await fs.writeFile(path.join(directory, filename), buffer, { flag: 'wx' });
-  res.status(201).json({ image_url: `/uploads/${filename}` });
+  if (!media.configured()) {
+    if (process.env.VERCEL) return res.status(503).json({ message: 'Cloudinary not configured on server. Check CLOUDINARY environment variables in Vercel dashboard.' });
+    const extension = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[mime];
+    const directory = path.resolve(__dirname, '../../public/uploads');
+    const filename = `${randomUUID()}.${extension}`;
+    await fs.mkdir(directory, { recursive: true });
+    await fs.writeFile(path.join(directory, filename), buffer, { flag: 'wx' });
+    return res.status(201).json({ image_url: `/uploads/${filename}` });
+  }
+  try {
+    const result = await media.upload(buffer);
+    return res.status(201).json({ image_url: result.secure_url });
+  } catch (error) {
+    console.error('[upload]', error.message);
+    return res.status(502).json({ message: 'Cloudinary upload failed: ' + error.message });
+  }
 });
 router.post('/admin/products', body(productSchema), async (req, res) => {
   const { send_offer_notification, ...productInput } = req.input;

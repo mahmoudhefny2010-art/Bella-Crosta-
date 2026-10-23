@@ -187,7 +187,10 @@ router.post('/admin/uploads', express.raw({ type: ['image/jpeg', 'image/png', 'i
     (mime === 'image/png' && buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) ||
     (mime === 'image/webp' && buffer.length >= 12 && buffer.toString('ascii', 0, 4) === 'RIFF' && buffer.toString('ascii', 8, 12) === 'WEBP')
   );
-  if (!valid) return res.status(415).json({ message: 'Choose a valid JPG, PNG or WebP image.' });
+  if (!valid) {
+    console.error('[upload] invalid body', { mime, isBuffer: Buffer.isBuffer(buffer), length: buffer?.length, firstBytes: buffer?.slice(0, 4)?.toString('hex') });
+    return res.status(415).json({ message: 'Choose a valid JPG, PNG or WebP image. Server did not receive valid image data.' });
+  }
   if (!media.configured()) {
     if (process.env.VERCEL) return res.status(503).json({ message: 'Cloudinary not configured on server. Check CLOUDINARY environment variables in Vercel dashboard.' });
     const extension = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[mime];

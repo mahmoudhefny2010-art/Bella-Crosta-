@@ -27,7 +27,7 @@ const phone = z.string().regex(/^(?:\+20|0)(?:10|11|12|15)\d{8}$/);
 const addressSchema = z.object({ label: text(60).default('Home'), address_line: text(300), landmark: optionalText(), floor: optionalText(20), apartment: optionalText(20), phone, latitude: z.number().min(-90).max(90), longitude: z.number().min(-180).max(180), is_default: z.boolean().default(false) }).strict().refine(value => inEgypt(value.latitude, value.longitude), { path: ['latitude'], message: 'Please choose a location inside Egypt.' });
 const body = schema => (req, res, next) => { req.input = schema.parse(req.body); next(); };
 router.param('id', (req, res, next, id) => { uuid.parse(id); next(); });
-router.get('/health', async (req, res) => { await db.raw('SELECT 1'); res.json({ ok: true, database: isPostgres(db) ? 'postgres' : 'mssql' }); });
+router.get('/health', async (req, res) => { await db.raw('SELECT 1'); res.json({ ok: true, database: isPostgres(db) ? 'postgres' : 'mssql', media_configured: media.configured() }); });
 router.get('/config', async (req, res) => res.json({ googleEnabled: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_CALLBACK_URL), googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY?.trim() || null, googleMapsMapId: process.env.GOOGLE_MAPS_MAP_ID?.trim() || null, oneSignalAppId: process.env.ONESIGNAL_APP_ID || null, oneSignalOrigin:process.env.ONESIGNAL_SITE_URL || null, realtimeMode:process.env.VERCEL?'poll':'socket', ...await siteContent.operational(db) }));
 router.get('/content', async (req, res) => res.json(siteContent.publicData(await siteContent.read(db))));
 router.use('/live',require('./live'));

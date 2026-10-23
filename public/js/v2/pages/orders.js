@@ -7,7 +7,10 @@ export default function createPage(context) {
 async function history() {
   if (!requireUser()) return;
   const { orders } = await api('/api/orders/mine');
-  page('My orders').innerHTML = orders.length ? orders.map(o => `<article class="panel"><div class="line"><h3>${esc(receiptNumber(o))}</h3><span class="badge">${esc(status(o.status))}</span></div><p>${esc(new Date(o.created_at).toLocaleString(language === 'ar' ? 'ar-EG' : 'en-EG'))} · ${esc(money(o.total_egp))}</p><a class="button primary" href="/track?id=${o.id}">${tr('Track')} ↗</a></article>`).join('') : `<p class="empty">${tr('No orders yet.')}</p>`;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayOrders = orders.filter(o => new Date(o.created_at) >= today);
+  page(tr('Last orders')).innerHTML = todayOrders.length ? todayOrders.map(o => `<article class="panel"><div class="line"><h3>${esc(receiptNumber(o))}</h3><span class="badge">${esc(status(o.status))}</span></div><p>${esc(new Date(o.created_at).toLocaleString(language === 'ar' ? 'ar-EG' : 'en-EG'))} · ${esc(money(o.total_egp))}</p><a class="button primary" href="/track?id=${o.id}">${tr('Track')} ↗</a></article>`).join('') : `<p class="empty">${tr('No orders today.')}</p>`;
 }
 
 async function tracking() {

@@ -74,7 +74,7 @@ function arrangeHeaderTools() {
 function pizzaCard(p) {
   const onOffer = p.sale_price_egp != null && p.sale_price_egp < p.price_egp;
   const price = onOffer ? `<span class="sale-price"><del>${esc(money(p.price_egp))}</del><strong class="price">${esc(money(p.sale_price_egp))}</strong></span>` : `<span class="price">${esc(money(p.price_egp))}</span>`;
-  return `<article class="pizza-card">${p.is_featured ? `<span class="signature-tag">${tr('Signature')}</span>` : ''}${onOffer ? `<span class="offer-tag">${tr('Offer')}</span>` : ''}${p.image_url ? `<img src="${esc(p.image_url)}" alt="${esc(local(p, 'name'))}" loading="lazy" width="640" height="480">` : `<div class="missing-photo">${esc(local(p, 'name'))}</div>`}<div class="content"><span class="label">${esc(local(p, 'category_name'))}</span><h3>${esc(local(p, 'name'))}</h3><p>${esc(local(p, 'description'))}</p><span class="label">${tr('32 cm · Neapolitan crust')}</span><div class="card-foot">${price}<button class="primary" data-add="${p.id}" aria-label="${tr('Add')} ${esc(local(p, 'name'))}">${tr('Add')} +</button></div></div></article>`;
+  return `<article class="pizza-card">${p.is_featured ? `<span class="signature-tag">${tr('Signature')}</span>` : ''}${onOffer ? `<span class="offer-tag">${tr('Offer')}</span>` : ''}${p.image_url ? `<img src="${esc(p.image_url)}" alt="${esc(local(p, 'name'))}" loading="lazy" width="640" height="480">` : `<div class="missing-photo">${esc(local(p, 'name'))}</div>`}<div class="content"><span class="label">${esc(local(p, 'category_name'))}</span><h3>${esc(local(p, 'name'))}</h3><p>${esc(local(p, 'description'))}</p><span class="label">${tr('32 cm · Neapolitan crust')}</span><div class="card-foot">${price}<button class="primary" data-add="${p.id}" aria-label="${tr('Add')} ${esc(local(p, 'name'))}">${tr('Add')} +</button><button class="outline" data-customize="${p.id}" aria-label="${tr('Customize')} ${esc(local(p, 'name'))}">${tr('Customize')}</button></div></div></article>`;
 }
 function renderNav() {
   const assignedRoles = Array.isArray(user?.roles) ? user.roles : (user?.role ? [user.role] : []);
@@ -456,6 +456,11 @@ document.addEventListener('click', e => {
   button.disabled = true;
   button.textContent = t('Added') + ' ✓';
   setTimeout(() => { button.innerHTML = label; button.disabled = false; }, 750);
+});
+document.addEventListener('click', e => {
+  const button = e.target.closest('[data-customize]');
+  if (!button) return;
+  location.href = '/builder?base=' + encodeURIComponent(button.dataset.customize);
 });
 bind('#language', 'click', () => setLanguage(language === 'en' ? 'ar' : 'en'));
 bind('#account-toggle', 'click', () => {

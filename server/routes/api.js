@@ -180,15 +180,20 @@ router.get('/admin/uploads/test', async (req, res) => {
   res.json({ configured, cloud_name: process.env.CLOUDINARY_CLOUD_NAME ? 'set' : 'missing', has_api_key: Boolean(process.env.CLOUDINARY_API_KEY), has_secret: Boolean(process.env.CLOUDINARY_API_SECRET) });
 });
 router.post('/admin/uploads', express.raw({ type: ['image/jpeg', 'image/png', 'image/webp'], limit: '4mb' }), async (req, res) => {
-  const mime = req.get('content-type')?.split(';')[0].trim().toLowerCase();
+  const mime = req.get('content-type')?.split(';')[0]?.trim().toLowerCase();
   const buffer = req.body;
-  const valid = Buffer.isBuffer(buffer) && buffer.length > 0 && (
+  console.log('[upload] received', { mime, bodyType: typeof buffer, isBuffer: Buffer.isBuffer(buffer), length: buffer?.length, contentLength: req.get('content-length'), firstBytes: buffer?.slice(0, 4)?.toString('hex') });
+  if (!buffer || !Buffer.isBuffer(buffer) || buffer.length === 0) {
+    console.error('[upload] empty body');
+    return res.status(400).json({ message: 'No image data received by server. Try uploading a smaller file or check your internet connection.' });
+  }
+  const valid = (
     (mime === 'image/jpeg' && buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) ||
     (mime === 'image/png' && buffer.length >= 8 && buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) ||
     (mime === 'image/webp' && buffer.length >= 12 && buffer.toString('ascii', 0, 4) === 'RIFF' && buffer.toString('ascii', 8, 12) === 'WEBP')
   );
   if (!valid) {
-    console.error('[upload] invalid body', { mime, isBuffer: Buffer.isBuffer(buffer), length: buffer?.length, firstBytes: buffer?.slice(0, 4)?.toString('hex') });
+    console.error('[upload] invalid body', { mime, isBuffer: Buffer.isBuffer(buffer), length: buffer.length, firstBytes: buffer.slice(0, 4).toString('hex') });
     return res.status(415).json({ message: 'Choose a valid JPG, PNG or WebP image. Server did not receive valid image data.' });
   }
   if (!media.configured()) {

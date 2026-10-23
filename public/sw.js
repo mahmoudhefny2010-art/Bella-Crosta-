@@ -1,5 +1,5 @@
 importScripts('https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.sw.js');
-const VERSION = 'bella-v2-96';
+const VERSION = 'bella-v2-97';
 const SHELL = [
   '/offline.html', '/error.html', '/500.html', '/js/theme.js', '/js/status-page.js', '/css/bella.css', '/css/polish.css', '/css/pages/home.css', '/css/pages/menu.css', '/css/pages/cart.css',
   '/css/pages/checkout.css', '/css/pages/orders.css', '/css/pages/addresses.css', '/css/pages/builder.css', '/css/pages/kitchen.css',

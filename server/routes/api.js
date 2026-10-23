@@ -179,10 +179,25 @@ router.get('/admin/uploads/test', async (req, res) => {
   const configured = Boolean(process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET);
   res.json({ configured, cloud_name: process.env.CLOUDINARY_CLOUD_NAME ? 'set' : 'missing', has_api_key: Boolean(process.env.CLOUDINARY_API_KEY), has_secret: Boolean(process.env.CLOUDINARY_API_SECRET) });
 });
-router.post('/admin/uploads', express.raw({ type: ['image/jpeg', 'image/png', 'image/webp'], limit: '4mb' }), async (req, res) => {
+// Custom raw body parser for file uploads (more reliable than express.raw() on Vercel)
+function rawBodyParser(req, res, next) {
+  const chunks = [];
+  req.on('data', chunk => chunks.push(chunk));
+  req.on('end', () => {
+    req.body = Buffer.concat(chunks);
+    next();
+  });
+  req.on('error', err => next(err));
+}
+
+router.post('/admin/uploads', rawBodyParser, async (req, res) => {
+  const contentLength = Number(req.get('content-length') || 0);
+  if (contentLength > 4 * 1024 * 1024) {
+    return res.status(413).json({ message: 'Image too large. Maximum 4 MB.' });
+  }
   const mime = req.get('content-type')?.split(';')[0]?.trim().toLowerCase();
   const buffer = req.body;
-  console.log('[upload] received', { mime, bodyType: typeof buffer, isBuffer: Buffer.isBuffer(buffer), length: buffer?.length, contentLength: req.get('content-length'), firstBytes: buffer?.slice(0, 4)?.toString('hex') });
+  console.log('[upload] received', { mime, isBuffer: Buffer.isBuffer(buffer), length: buffer?.length, contentLength, firstBytes: buffer?.slice(0, 4)?.toString('hex') });
   if (!buffer || !Buffer.isBuffer(buffer) || buffer.length === 0) {
     console.error('[upload] empty body');
     return res.status(400).json({ message: 'No image data received by server. Try uploading a smaller file or check your internet connection.' });

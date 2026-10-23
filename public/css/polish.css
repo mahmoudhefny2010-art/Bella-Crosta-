@@ -187,4 +187,10 @@ html[dir=rtl] .account-popover{direction:rtl}
 .mobile-nav-tools .account-toggle{width:40px;height:40px;min-width:40px;min-height:40px;padding:0}
 @media(max-width:860px){.account-popover{position:fixed;top:calc(76px + 8px);inset-inline-end:max(12px,env(safe-area-inset-right));width:min(360px,calc(100vw - 24px));max-height:calc(100dvh - 100px)}}
 @media(max-width:740px){.account-popover{top:calc(68px + 8px);max-height:calc(100dvh - 92px)}}
+
+#pull-to-refresh{position:fixed;top:0;left:0;right:0;height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;opacity:0;transition:opacity .2s ease,transform .2s ease;z-index:200;pointer-events:none}
+.refresh-spinner{width:24px;height:24px;border:2px solid color-mix(in srgb,var(--red) 30%,transparent);border-top-color:var(--red);border-radius:50%;animation:refresh-spin .8s linear infinite}
+.refresh-spinner.spin{animation-play-state:running}
+.refresh-text{font-size:11px;color:var(--muted)}
+@keyframes refresh-spin{to{transform:rotate(360deg)}}
 @media(max-width:380px){.mobile-nav-tools .account-toggle{width:36px;height:36px;min-width:36px;min-height:36px}}

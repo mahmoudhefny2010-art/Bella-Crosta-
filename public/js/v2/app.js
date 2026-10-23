@@ -398,14 +398,37 @@ function scheduleLiveRefresh() {
 document.addEventListener('visibilitychange',()=>{if(!document.hidden && liveRefreshPending)scheduleLiveRefresh();});
 document.addEventListener('focus',()=>{if(!document.hidden && liveRefreshPending)scheduleLiveRefresh();});
 
-let touchStartY = 0;
-document.addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; }, { passive: true });
+let touchStartY = 0, touchPulling = false;
+const refreshIndicator = document.createElement('div');
+refreshIndicator.id = 'pull-to-refresh';
+refreshIndicator.innerHTML = '<div class="refresh-spinner"></div><span class="refresh-text">Refreshing...</span>';
+refreshIndicator.hidden = true;
+document.body.insertBefore(refreshIndicator, document.body.firstChild);
+document.addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; touchPulling = false; }, { passive: true });
 document.addEventListener('touchmove', e => {
-  if (window.scrollY <= 0 && e.touches[0].clientY - touchStartY > 70) {
-    touchStartY = -9999;
-    location.reload();
+  if (window.scrollY <= 0) {
+    const pull = e.touches[0].clientY - touchStartY;
+    if (pull > 30) {
+      touchPulling = true;
+      refreshIndicator.hidden = false;
+      refreshIndicator.style.opacity = Math.min(1, pull / 100);
+      refreshIndicator.style.transform = `translateY(${Math.min(pull - 30, 60)}px)`;
+      if (pull > 100) refreshIndicator.querySelector('.refresh-spinner').classList.add('spin');
+    }
+    if (pull > 100) e.preventDefault();
   }
 }, { passive: false });
+document.addEventListener('touchend', async e => {
+  if (touchPulling && !refreshIndicator.hidden && e.changedTouches[0].clientY - touchStartY > 100) {
+    refreshIndicator.querySelector('.refresh-spinner').classList.add('spin');
+    try { await renderRoute(path); toast('Refreshed'); } catch(error) { toast(error.message); }
+    refreshIndicator.hidden = true;
+    refreshIndicator.querySelector('.refresh-spinner').classList.remove('spin');
+    refreshIndicator.style.opacity = '0';
+    refreshIndicator.style.transform = 'translateY(0)';
+  }
+  touchPulling = false;
+});
 async function init() {
   const data = await Promise.all([api('/api/menu'), api('/api/me'), api('/api/config'), api('/api/content').catch(() => null)]);
   products = data[0].products; user = data[1].user; config = data[2];

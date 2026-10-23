@@ -58,7 +58,7 @@ async function checkout() {
       <aside class="checkout-summary panel" aria-labelledby="summary-title">
         <div class="checkout-summary-heading"><div><span class="eyebrow">${tr('Fresh from our oven')}</span><h2 id="summary-title">${tr('Your order')}</h2></div><a href="/cart">${tr('Edit')}</a></div>
         <div class="checkout-items">${cart.map(item => { const p = productFor(item); const options = p.options.filter(o => item.optionIds.includes(o.id)); return `<article class="checkout-item">${p.image_url ? `<img src="${esc(p.image_url)}" alt="" width="64" height="64">` : '<div class="checkout-item-placeholder" aria-hidden="true">BC</div>'}<div class="checkout-item-description"><h3>${item.custom ? tr('Custom pizza') : esc(local(p, 'name'))}</h3><p>${options.length ? options.map(o => esc(local(o, 'name'))).join(' · ') : tr('32 cm · Neapolitan crust')}</p><span>${tr('Quantity')}: ${item.quantity}</span></div><strong>${esc(money(unit(item) * item.quantity))}</strong></article>`; }).join('')}</div>
-        <div class="checkout-totals"><div><span>${tr('Subtotal')}</span><strong>${esc(money(total()))}</strong></div><div><span>${tr('Delivery fee')}</span><strong>${esc(money(config.deliveryFee))}</strong></div><div class="checkout-grand-total"><span>${tr('Total')}</span><strong>${esc(money(total() + config.deliveryFee))}</strong></div></div>
+        <div class="checkout-totals"><div><span>${tr('Subtotal')}</span><strong id="summary-subtotal">${esc(money(total()))}</strong></div><div id="summary-delivery-row"><span>${tr('Delivery fee')}</span><strong id="summary-delivery">${esc(money(config.deliveryFee))}</strong></div><div class="checkout-grand-total"><span>${tr('Total')}</span><strong id="summary-total">${esc(money(total() + config.deliveryFee))}</strong></div></div>
         <fieldset class="checkout-payment-options" aria-describedby="payment-hint">
           <legend>${tr('Payment method')}</legend>
           <div class="checkout-payment-choices">
@@ -127,12 +127,12 @@ async function checkout() {
 
   const isPickup = () => document.querySelector('input[name=fulfillmentType]:checked').value === 'PICKUP';
   const addressSection = document.querySelector('#checkout-address-section');
-  const summaryDelivery = $('#summary-delivery-row');
+  const summaryDelivery = document.getElementById('summary-delivery-row');
   const paymentChoices = document.querySelectorAll('.checkout-payment');
   const updateFulfillment = () => {
     const pickup = isPickup();
-    addressSection.hidden = pickup;
-    summaryDelivery.hidden = pickup;
+    if (addressSection) addressSection.hidden = pickup;
+    if (summaryDelivery) summaryDelivery.hidden = pickup;
     $('#summary-subtotal').textContent = esc(money(total()));
     $('#summary-total').textContent = esc(money(total() + (pickup ? 0 : config.deliveryFee)));
     paymentChoices.forEach(el => {

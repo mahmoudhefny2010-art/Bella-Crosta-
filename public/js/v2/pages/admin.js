@@ -68,7 +68,12 @@ async function admin(tab, editId) {
       button.disabled = true;
       try {
         const result = await api('/api/admin/products' + (edit ? '/' + edit.id : ''), { method: edit ? 'PUT' : 'POST', body: { ...f, image_url: $('#product-image-url')?.value || '', price_egp: Number(f.price_egp), sale_price_egp: salePrice, send_offer_notification: new FormData(form).has('send_offer_notification'), is_available: Boolean(f.is_available), is_featured: Boolean(f.is_featured), ingredients: edit?.ingredients || [], prep_minutes: edit?.prep_minutes || 20 } });
+        if (!result.product?.image_url && $('#product-image-url')?.value) {
+          throw new Error('Photo was not saved to database. Please try again.');
+        }
         toast(result.notification?.sent ? (result.notification.recipients ? 'Offer saved and notification sent.' : 'Offer saved, but no customers are subscribed to notifications.') : result.notification ? 'Offer saved, but notifications are not configured.' : 'Saved');
+        // Refresh products so menu shows the new photo immediately
+        try { ctx.products = (await api('/api/menu')).products; } catch {}
         await admin();
       } catch (error) {
         toast(error.message || 'Could not save product. Check the database connection and try again.');

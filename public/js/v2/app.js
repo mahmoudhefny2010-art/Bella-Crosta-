@@ -437,14 +437,18 @@ document.addEventListener('click', async e => {
   if (!button) return;
   if (!('Notification' in window)) { toast('This browser does not support notifications'); return; }
   if (Notification.permission === 'denied') { toast('Allow notifications in this site’s browser settings'); return; }
-  const subscription = pushSdk?.User?.PushSubscription;
-  if (!subscription) { toast('Notifications are unavailable right now'); return; }
+  if (!pushSdk) { toast('Notifications are loading, please try again'); return; }
   button.disabled = true;
   try {
-    if (subscription.optedIn) await subscription.optOut();
-    else {
+    const subscription = pushSdk.User?.PushSubscription;
+    if (subscription?.optedIn) {
+      await subscription.optOut();
+    } else {
       if (Notification.permission !== 'granted') await pushSdk.Notifications.requestPermission();
-      if (Notification.permission === 'granted') await subscription.optIn();
+      if (Notification.permission === 'granted') {
+        if (subscription) await subscription.optIn();
+        else await new Promise(r => setTimeout(r, 800));
+      }
     }
     await syncPushSubscription();
     updateNotificationPreference();
@@ -500,8 +504,13 @@ engagementDialog.addEventListener('click', async e => {
     try {
       if (pushSdk?.Notifications?.requestPermission) await pushSdk.Notifications.requestPermission();
       else await Notification.requestPermission();
-      await syncPushSubscription();
-      if (Notification.permission === 'granted') { button.textContent = copy.notifyReady; toast('Notifications enabled'); }
+      if (Notification.permission === 'granted') {
+        const sub = pushSdk.User?.PushSubscription;
+        if (sub) await sub.optIn();
+        else await new Promise(r => setTimeout(r, 800));
+        await syncPushSubscription();
+        button.textContent = copy.notifyReady; toast('Notifications enabled');
+      }
       else {
         button.textContent = copy.notifyBlocked;
         button.dataset.onboarding = 'notify-help';

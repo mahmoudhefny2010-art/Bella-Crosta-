@@ -14,4 +14,11 @@ html[data-theme=light] .hero{background:radial-gradient(ellipse at 80% 55%,#a647
 .hero-art:before{content:'';position:absolute;inset:8%;border:1px solid var(--line);border-radius:50%}
 .hero-art .hero-photo,.hero-art .hero-pizza{width:100%;aspect-ratio:1;margin:0;filter:drop-shadow(0 20px 30px #00000025)}
 .hero-art .hero-stamp{inset-block-start:auto;inset-block-end:3%;inset-inline-end:0;width:68px;height:68px;font-size:8px;background:var(--panel);z-index:4;line-height:1.7;text-align:center}
+.hero-leaf{position:absolute;z-index:2;font-size:clamp(20px,4vw,34px);line-height:1;filter:drop-shadow(0 6px 10px #00000020);pointer-events:none}
+.hero-leaf.leaf-top{top:-8%;right:18%;transform:rotate(-12deg)}
+.hero-leaf.leaf-right{top:28%;right:-10%;transform:rotate(25deg)}
+.hero-leaf.leaf-bottom{bottom:-8%;left:22%;transform:rotate(10deg)}
+.hero-leaf.leaf-left{top:42%;left:-10%;transform:rotate(-20deg)}
+html[lang=ar] .hero-leaf.leaf-right{right:auto;left:-10%}
+html[lang=ar] .hero-leaf.leaf-left{left:auto;right:-10%}
 html[lang=ar] .hero h1{letter-spacing:0;font-size:clamp(36px,min(4.6vw,8svh),58px);line-height:1.3}

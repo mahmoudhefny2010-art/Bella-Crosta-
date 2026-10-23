@@ -16,7 +16,22 @@ async function checkout() {
     <div class="checkout-layout">
       <form id="checkout-form" class="checkout-form">
         <section class="panel checkout-section">
-          ${sectionTitle('01', 'Contact details', 'Who are we making pizza for?')}
+          ${sectionTitle('01', 'How to receive', 'Choose delivery or pickup.')}
+          <div class="checkout-fulfillment">
+            <label class="checkout-fulfillment-choice">
+              <input type="radio" name="fulfillmentType" value="DELIVERY" form="checkout-form" checked>
+              <span class="checkout-choice-selected" aria-hidden="true">✓</span>
+              <strong>${tr('Delivery')}</strong><small>${tr('We bring it to you')}</small>
+            </label>
+            <label class="checkout-fulfillment-choice">
+              <input type="radio" name="fulfillmentType" value="PICKUP" form="checkout-form">
+              <span class="checkout-choice-selected" aria-hidden="true">✓</span>
+              <strong>${tr('Pickup')}</strong><small>${tr('Collect from the store, pay at cashier')}</small>
+            </label>
+          </div>
+        </section>
+        <section class="panel checkout-section">
+          ${sectionTitle('02', 'Contact details', 'Who are we making pizza for?')}
           ${input('customerName', 'Your name', user.name)}
           <p class="checkout-account">${tr('Signed in as')} <bdi>${esc(user.email)}</bdi></p>
         </section>
@@ -109,6 +124,26 @@ async function checkout() {
   chooseAddress();
   bind('#saved-address', 'change', chooseAddress);
   bind('#save-address', 'change', () => { $('#address-label-field').hidden = !$('#save-address').checked; });
+
+  const isPickup = () => document.querySelector('input[name=fulfillmentType]:checked').value === 'PICKUP';
+  const addressSection = document.querySelector('#checkout-address-section');
+  const summaryDelivery = $('#summary-delivery-row');
+  const paymentChoices = document.querySelectorAll('.checkout-payment');
+  const updateFulfillment = () => {
+    const pickup = isPickup();
+    addressSection.hidden = pickup;
+    summaryDelivery.hidden = pickup;
+    $('#summary-subtotal').textContent = esc(money(total()));
+    $('#summary-total').textContent = esc(money(total() + (pickup ? 0 : config.deliveryFee)));
+    paymentChoices.forEach(el => {
+      const input = el.querySelector('input[name=paymentMethod]');
+      if (pickup && input.value === 'PAY_AT_CASHIER') { el.hidden = false; input.checked = true; }
+      else if (!pickup && input.value === 'PAY_AT_CASHIER') { el.hidden = true; if (input.checked) document.querySelector('input[name=paymentMethod]:not([value="PAY_AT_CASHIER"]').checked = true; }
+    });
+    $('#payment-hint').textContent = pickup ? tr('Pay at the store when you collect.') : t(document.querySelector('input[name=paymentMethod]:checked').value === 'INSTAPAY_ON_DELIVERY' ? 'Transfer when your order arrives. The driver will confirm receipt.' : 'Pay when your pizza arrives.');
+  };
+  document.querySelectorAll('input[name=fulfillmentType]').forEach(rb => rb.addEventListener('change', updateFulfillment));
+  updateFulfillment();
   $('#checkout-form').addEventListener('input', e => { e.target.removeAttribute('aria-invalid'); $('#checkout-error').hidden = true; });
   bind('#checkout-form', 'submit', async e => {
     e.preventDefault();
@@ -130,7 +165,7 @@ async function checkout() {
           $('.checkout-saved-picker').hidden = false;
           chooseAddress();
         }
-        const payload = { customerName: $('#customerName').value, paymentMethod: document.querySelector('input[name=paymentMethod]:checked').value, ...(addressId ? { addressId } : { address }), notes: $('#notes').value, items: cart.map(({ productId, quantity, optionIds, custom }) => ({ productId, quantity, optionIds, custom })) };
+        const payload = { customerName: $('#customerName').value, fulfillmentType: document.querySelector('input[name=fulfillmentType]:checked').value, paymentMethod: document.querySelector('input[name=paymentMethod]:checked').value, ...(addressId ? { addressId } : { address }), notes: $('#notes').value, items: cart.map(({ productId, quantity, optionIds, custom }) => ({ productId, quantity, optionIds, custom })) };
         const body = JSON.stringify(payload);
         let retry;
         try { retry = JSON.parse(sessionStorage.getItem('bella_checkout_request') || 'null'); } catch {}

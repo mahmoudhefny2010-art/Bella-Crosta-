@@ -65,15 +65,18 @@ async function create(user, input) {
       }
     }
     let address = input.address;
-    if (input.addressId) address = await trx('addresses').where({ id: input.addressId, user_id: user.id }).first();
-    if (!address) fail('Select or enter a delivery address.');
-    if (!inEgypt(Number(address.latitude), Number(address.longitude))) fail('Please choose a location inside Egypt.');
+    let addressId = input.addressId;
+    if (input.fulfillmentType === 'DELIVERY') {
+      if (input.addressId) address = await trx('addresses').where({ id: input.addressId, user_id: user.id }).first();
+      if (!address) fail('Select or enter a delivery address.');
+      if (!inEgypt(Number(address.latitude), Number(address.longitude))) fail('Please choose a location inside Egypt.');
+    }
     const lines = await priceItems(trx,input.items);
     const subtotal = lines.reduce((sum, line) => sum + line.line_total_egp, 0);
     const operation = await require('./site-content').operational(trx);
     if (!operation.acceptOrders) fail(operation.closedMessage, 409);
-    const delivery = operation.deliveryFee;
-    const [order] = await trx('orders').insert({ order_number: 'BC-' + crypto.randomBytes(6).toString('hex').toUpperCase(), user_id: user.id, address_id: input.addressId || null, address_snapshot: JSON.stringify(address), customer_name: input.customerName, payment_status:'UNPAID', payment_method: input.paymentMethod || 'CASH_ON_DELIVERY', customer_phone: address.phone, subtotal_egp: subtotal, delivery_fee_egp: delivery, total_egp: subtotal + delivery, notes: input.notes || '' }).returning('*');
+    const delivery = input.fulfillmentType === 'DELIVERY' ? operation.deliveryFee : 0;
+    const [order] = await trx('orders').insert({ order_number: 'BC-' + crypto.randomBytes(6).toString('hex').toUpperCase(), user_id: user.id, address_id: addressId || null, address_snapshot: input.fulfillmentType === 'PICKUP' ? JSON.stringify({ label: 'Pickup', address_line: 'Bella Crosta Store' }) : JSON.stringify(address), customer_name: input.customerName, payment_status:'UNPAID', payment_method: input.paymentMethod || 'CASH_ON_DELIVERY', customer_phone: address?.phone || '', subtotal_egp: subtotal, delivery_fee_egp: delivery, total_egp: subtotal + delivery, notes: input.notes || '', fulfillment_type: input.fulfillmentType || 'DELIVERY' }).returning('*');
     await trx('order_items').insert(lines.map(line => ({ ...line, order_id: order.id })));
     await trx('order_events').insert({ order_id: order.id, status: 'PLACED', actor_id: user.id });
     await createPayment(order);

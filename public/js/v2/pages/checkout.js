@@ -35,8 +35,8 @@ async function checkout() {
           ${input('customerName', 'Your name', user.name)}
           <p class="checkout-account">${tr('Signed in as')} <bdi>${esc(user.email)}</bdi></p>
         </section>
-        <section class="panel checkout-section">
-          ${sectionTitle('02', 'Delivery details', 'Tell us where to bring the good stuff.')}
+        <section id="checkout-address-section" class="panel checkout-section">
+          ${sectionTitle('03', 'Delivery details', 'Tell us where to bring the good stuff.')}
           <div class="checkout-saved-picker" ${addresses.length ? '' : 'hidden'}><label for="saved-address">${tr('Saved address')}</label><select id="saved-address"><option value="">+ ${tr('New address')}</option>${addresses.map(a => `<option value="${a.id}" ${a.id === defaultAddress?.id ? 'selected' : ''}>${esc(a.label + ' · ' + a.address_line)}</option>`).join('')}</select></div>
           <div id="saved-address-preview" class="checkout-address-preview" hidden></div>
           <div id="new-address">
@@ -50,7 +50,7 @@ async function checkout() {
           </div>
         </section>
         <section class="panel checkout-section">
-          ${sectionTitle('03', 'A little extra', 'Anything we should know?')}
+          ${sectionTitle('04', 'A little extra', 'Anything we should know?')}
           <label for="notes">${tr('Order notes')} <span class="checkout-optional">${tr('Optional')}</span></label><textarea id="notes" rows="3" maxlength="1000" placeholder="${tr('Delivery instructions or a note for the kitchen…')}"></textarea>
         </section>
         <div id="checkout-error" class="checkout-error" role="alert" hidden></div>
@@ -62,6 +62,7 @@ async function checkout() {
         <fieldset class="checkout-payment-options" aria-describedby="payment-hint">
           <legend>${tr('Payment method')}</legend>
           <div class="checkout-payment-choices">
+            <label class="checkout-payment" hidden><input type="radio" name="paymentMethod" value="PAY_AT_CASHIER" form="checkout-form" disabled><strong>${tr('Pay at cashier')}</strong><small>${tr('Pay at the store when you collect.')}</small></label>
             <label class="checkout-payment">
               <input type="radio" name="paymentMethod" value="CASH_ON_DELIVERY" form="checkout-form" checked>
               <span class="payment-selected" aria-hidden="true">✓</span>
@@ -105,7 +106,7 @@ async function checkout() {
     $(`#${name}`).dir = 'ltr';
   }
   for (const name of ['floor', 'apartment']) $(`#${name}`).maxLength = 20;
-  await mountMap(null, true, false);
+  const mapReady = mountMap(null, true, false).then(() => true).catch(error => { if ($('#location-status')) $('#location-status').textContent = t(error.message); return false; });
   let automaticLocationRequested = false;
   const chooseAddress = () => {
     const chosen = addresses.find(a => a.id === $('#saved-address').value);
@@ -113,7 +114,8 @@ async function checkout() {
     $('#new-address').querySelectorAll('input').forEach(i => i.disabled = Boolean(chosen));
     $('#saved-address-preview').hidden = !chosen;
     $('#saved-address-preview').innerHTML = chosen ? `<span class="badge">${esc(chosen.label)}</span><p><strong>${esc(chosen.address_line)}</strong><br>${[chosen.landmark, chosen.floor && t('Floor') + ' ' + chosen.floor, chosen.apartment && t('Apartment') + ' ' + chosen.apartment].filter(Boolean).map(esc).join(' · ')}<br><bdi>${esc(chosen.phone)}</bdi></p>` : '';
-    if (!chosen) requestAnimationFrame(() => {
+    if (!chosen) requestAnimationFrame(async () => {
+      if (!await mapReady || $('#geolocate')?.disabled) return;
       ctx.map?.invalidateSize();
       if (!automaticLocationRequested) {
         automaticLocationRequested = true;
@@ -131,12 +133,18 @@ async function checkout() {
   const paymentChoices = document.querySelectorAll('.checkout-payment');
   const updateFulfillment = () => {
     const pickup = isPickup();
-    if (addressSection) addressSection.hidden = pickup;
+    if (addressSection) {
+      addressSection.hidden = pickup;
+      addressSection.querySelectorAll('input, select, button').forEach(input => input.disabled = pickup);
+      if (!pickup) chooseAddress();
+    }
     if (summaryDelivery) summaryDelivery.hidden = pickup;
     $('#summary-subtotal').textContent = esc(money(total()));
     $('#summary-total').textContent = esc(money(total() + (pickup ? 0 : config.deliveryFee)));
     paymentChoices.forEach(el => {
       const input = el.querySelector('input[name=paymentMethod]');
+      el.hidden = pickup ? input.value !== 'PAY_AT_CASHIER' : input.value === 'PAY_AT_CASHIER';
+      input.disabled = el.hidden;
       if (pickup && input.value === 'PAY_AT_CASHIER') { el.hidden = false; input.checked = true; }
       else if (!pickup && input.value === 'PAY_AT_CASHIER') { el.hidden = true; if (input.checked) document.querySelector('input[name=paymentMethod]:not([value="PAY_AT_CASHIER"]').checked = true; }
     });
@@ -154,8 +162,8 @@ async function checkout() {
     $('#checkout-error').hidden = true;
     try {
       await busy(button, async () => {
-        let addressId = $('#saved-address').value;
-        const address = addressId ? undefined : addressInput(e.target);
+        let addressId = isPickup() ? '' : $('#saved-address').value;
+        const address = isPickup() || addressId ? undefined : addressInput(e.target);
         if (address && $('#save-address').checked) {
           const saved = await api('/api/addresses', { method: 'POST', body: address });
           addressId = saved.address.id;
@@ -165,7 +173,7 @@ async function checkout() {
           $('.checkout-saved-picker').hidden = false;
           chooseAddress();
         }
-        const payload = { customerName: $('#customerName').value, fulfillmentType: document.querySelector('input[name=fulfillmentType]:checked').value, paymentMethod: document.querySelector('input[name=paymentMethod]:checked').value, ...(addressId ? { addressId } : { address }), notes: $('#notes').value, items: cart.map(({ productId, quantity, optionIds, custom }) => ({ productId, quantity, optionIds, custom })) };
+        const payload = { customerName: $('#customerName').value, fulfillmentType: document.querySelector('input[name=fulfillmentType]:checked').value, paymentMethod: document.querySelector('input[name=paymentMethod]:checked').value, ...(!isPickup() ? (addressId ? { addressId } : { address }) : {}), notes: $('#notes').value, items: cart.map(({ productId, quantity, optionIds, custom }) => ({ productId, quantity, optionIds, custom })) };
         const body = JSON.stringify(payload);
         let retry;
         try { retry = JSON.parse(sessionStorage.getItem('bella_checkout_request') || 'null'); } catch {}

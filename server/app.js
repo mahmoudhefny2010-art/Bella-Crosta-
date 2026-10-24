@@ -111,7 +111,7 @@ orders.setPublisher(async (order, { notify: shouldNotify = true } = {}) => {
   if (io) {
     io.to('user:' + order.user_id).to('order:' + order.id).to('kitchen').to('admin').to('owner').to('delivery').to('driver:' + order.assigned_driver_id).emit('order', { id: order.id, status: order.status });
   }
-  if (shouldNotify) notify(order).catch(error => console.error('[push]', error.name));
+  if (shouldNotify) await notify(order).catch(error => console.error('[push]', error.name));
 });
 async function start() {
   try {

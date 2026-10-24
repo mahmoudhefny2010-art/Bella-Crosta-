@@ -70,6 +70,14 @@ const ar = {
   'Customer':'عميل', 'You cannot remove your own administrator access.':'لا يمكنك إزالة صلاحية الإدارة من حسابك.'
 };
 Object.assign(ar, { Owner:'???? ??????', 'Owner dashboard':'???? ??????' });
+Object.assign(ar, {
+  'Pickup':'استلام من المطعم', 'Pay at cashier':'الدفع عند الكاشير',
+  'How to receive':'طريقة استلام الطلب', 'Choose delivery or pickup.':'اختر التوصيل أو الاستلام من المطعم.',
+  'We bring it to you':'نوصل طلبك إليك', 'Collect from the store, pay at cashier':'استلم من المطعم وادفع عند الكاشير',
+  'Pay at the store when you collect.':'ادفع في المطعم عند استلام طلبك.',
+  'Confirm payment and collection':'تأكيد الدفع والاستلام',
+  'Confirm payment received and order collected?':'هل تم استلام المبلغ وتسليم الطلب؟'
+});
 export const statuses = { PLACED: ['Placed', 'تم الطلب'], ACCEPTED: ['Accepted', 'تم القبول'], PREPARING: ['Preparing', 'قيد التحضير'], READY: ['Ready', 'جاهز'], OUT_FOR_DELIVERY: ['Out for delivery', 'في الطريق'], DELIVERED: ['Delivered', 'تم التسليم'], CANCELLED: ['Cancelled', 'ملغي'] };
 let contentOverrides = new Map();
 export function setContentOverrides(values = {}) { contentOverrides = new Map(Object.entries(values)); }

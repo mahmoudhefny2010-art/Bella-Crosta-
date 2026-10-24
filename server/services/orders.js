@@ -64,8 +64,8 @@ async function create(user, input) {
         return {...await trx('orders').where({id:previous.order_id}).first(), replayed:true};
       }
     }
-    let address = input.address;
-    let addressId = input.addressId;
+    let address = input.fulfillmentType === 'PICKUP' ? undefined : input.address;
+    let addressId = input.fulfillmentType === 'PICKUP' ? undefined : input.addressId;
     if (input.fulfillmentType === 'DELIVERY') {
       if (input.addressId) address = await trx('addresses').where({ id: input.addressId, user_id: user.id }).first();
       if (!address) fail('Select or enter a delivery address.');
@@ -123,6 +123,7 @@ async function pickup(id, driver) {
   const order = await db.transaction(async trx => {
     const order = await trx('orders').where({ id }).forUpdate().first();
     if (!order || order.assigned_driver_id !== driver.id) fail('Order is not assigned to you.', 403);
+    if (order.fulfillment_type === 'PICKUP') fail('Pickup orders cannot be delivered.', 409);
     assertTransition(order.status, 'OUT_FOR_DELIVERY');
     // A token is issued when the customer opens tracking, then retained only by that browser.
     const credential = credentials();
@@ -172,6 +173,7 @@ async function acceptDelivery(id, driver) {
   const order = await db.transaction(async trx => {
     const order = await trx('orders').where({id}).forUpdate().first();
     if (!order) fail('Order not found.',404);
+    if (order.fulfillment_type === 'PICKUP') fail('Pickup orders cannot be assigned to a driver.',409);
     if (!['PLACED','ACCEPTED','PREPARING','READY'].includes(order.status)) fail('This order is no longer available to accept.',409);
     if (order.assigned_driver_id === driver.id) return order;
     if (order.assigned_driver_id) fail('Another driver is already assigned to this order.',409);
@@ -188,11 +190,24 @@ async function assign(id, driverId) {
     const driver = await trx('users').where({ id: driverId, is_active: true }).whereExists(function () { this.select('*').from('user_roles').whereRaw('user_roles.user_id = users.id').where({ role: 'driver' }); }).first();
     if (!driver) fail('Driver not found.', 404);
     const order = await trx('orders').where({ id }).forUpdate().first();
-    if (!order || !['PLACED','ACCEPTED','PREPARING','READY','OUT_FOR_DELIVERY'].includes(order.status)) fail('Order is not available for assignment.', 409);
+    if (!order || order.fulfillment_type === 'PICKUP' || !['PLACED','ACCEPTED','PREPARING','READY','OUT_FOR_DELIVERY'].includes(order.status)) fail('Order is not available for assignment.', 409);
     const [updated] = await trx('orders').where({ id }).update({ assigned_driver_id: driverId, updated_at: databaseNow(trx) }).returning('*');
     return updated;
   });
   await publish(order, { notify: false });
   return order;
 }
-module.exports = { create, edit, detail, queueDetails, transition, pickup, issueCode, confirm, setPublisher, drivers, assign, acceptDelivery };
+async function collect(id, actor) {
+  const order = await db.transaction(async trx => {
+    const order = await trx('orders').where({id}).forUpdate().first();
+    if (!order) fail('Order not found.',404);
+    if (order.fulfillment_type !== 'PICKUP' || order.status !== 'READY') fail('Only ready pickup orders can be collected.',409);
+    const update = {status:'DELIVERED',payment_status:'PAID',amount_received_egp:Number(order.total_egp),change_due_egp:0,paid_by:actor.id,paid_at:databaseNow(trx),updated_at:databaseNow(trx)};
+    await trx('orders').where({id}).update(update);
+    await trx('order_events').insert({order_id:id,status:'DELIVERED',actor_id:actor.id,note:'Collected by customer; cashier confirmed payment'});
+    return {...order,...update};
+  });
+  await publish(order);
+  return detail(id);
+}
+module.exports = { collect, create, edit, detail, queueDetails, transition, pickup, issueCode, confirm, setPublisher, drivers, assign, acceptDelivery };

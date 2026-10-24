@@ -251,7 +251,16 @@ function locate() { return new Promise((resolve, reject) => { if (!navigator.geo
 function requireUser() { if (user) return true; page('Sign in').innerHTML = `<p>${tr('Please sign in to continue.')}</p><a class="button primary" href="/login">${tr('Sign in')}</a>`; return false; }
 function updateDriver(data) { if (!map) return; const point = [Number(data.latitude), Number(data.longitude)]; if (!driverMarker) driverMarker = map.addMarker(point, false, true); else driverMarker.setLatLng(point); }
 function beep() { if (!soundContext) return; const osc = soundContext.createOscillator(), gain = soundContext.createGain(); osc.connect(gain); gain.connect(soundContext.destination); osc.frequency.value = 720; gain.gain.value = .08; osc.start(); osc.stop(soundContext.currentTime + .25); }
-function loadScript(src) { return new Promise((resolve, reject) => { const script = document.createElement('script'); script.src = src; script.onload = resolve; script.onerror = reject; document.head.appendChild(script); }); }
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    const timer = setTimeout(() => { script.remove(); reject(new Error('The notification service took too long to load.')); }, 12000);
+    script.src = src;
+    script.onload = () => { clearTimeout(timer); resolve(); };
+    script.onerror = () => { clearTimeout(timer); script.remove(); reject(new Error('The notification service could not load.')); };
+    document.head.appendChild(script);
+  });
+}
 function isInstalled() { return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true || localStorage.getItem('bella_app_installed') === '1'; }
 function hideLoadingScreen() {
   const screen = $('#loading-screen');
@@ -328,8 +337,8 @@ async function push() {
     window.OneSignalDeferred = window.OneSignalDeferred || [];
     await new Promise(resolve => window.OneSignalDeferred.push(async OneSignal => {
       try {
-        pushSdk = OneSignal;
         await OneSignal.init({ appId: config.oneSignalAppId, serviceWorkerPath: '/sw.js', serviceWorkerParam: { scope: '/' }, allowLocalhostAsSecureOrigin: true });
+        pushSdk = OneSignal;
         if (user) await OneSignal.login(user.id);
         OneSignal.User?.PushSubscription?.addEventListener?.('change', () => { syncPushSubscription(); updateNotificationPreference(); });
         await syncPushSubscription();
@@ -477,6 +486,11 @@ document.addEventListener('click', async e => {
   if (!pushSdk) { toast('Notifications are loading, please try again'); return; }
   button.disabled = true;
   try {
+    if (pushSdk.User?.PushSubscription?.optedIn) {
+      await pushSdk.User.PushSubscription.optOut();
+      toast('Notifications disabled');
+      return;
+    }
     if (pushSdk.Notifications?.requestPermission) await pushSdk.Notifications.requestPermission();
     else await Notification.requestPermission();
     if (Notification.permission !== 'granted') {

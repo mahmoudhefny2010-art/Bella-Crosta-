@@ -97,3 +97,10 @@ html[lang=ar] .checkout-item h3{font-family:Cairo,sans-serif}
 .checkout-fulfillment-choice strong{font-size:11px;line-height:1.4;color:var(--cream);font-weight:600}
 .checkout-fulfillment-choice small{font-size:9px;line-height:1.4;color:var(--muted)}
 .hidden{display:none!important}
+
+.checkout-page [hidden]{display:none!important}
+.checkout-fulfillment{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.checkout-fulfillment-choice{position:relative;grid-template-columns:16px minmax(0,1fr);min-height:70px}
+.checkout-fulfillment-choice small{grid-column:2;overflow-wrap:anywhere}
+.checkout-fulfillment-choice:has(input:focus-visible){outline:2px solid var(--gold);outline-offset:3px}
+@media(max-width:480px){.checkout-field input,.checkout-field select,.checkout-section textarea{font-size:16px}.checkout-item{grid-template-columns:44px minmax(0,1fr)}.checkout-item>strong{grid-column:2}.checkout-item>img{width:44px;height:44px;grid-row:span 2}}

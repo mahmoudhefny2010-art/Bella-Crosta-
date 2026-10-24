@@ -17,7 +17,7 @@ export default function createPage(ctx) {
     const orderCard = order => {
       const index = states.indexOf(order.status);
       const next = [...states, 'READY'][index + 1];
-      return `<article class="order-card"><h4>${esc(receiptNumber(order))}</h4><p>${esc(order.customer_name)} · ${esc(new Date(order.created_at).toLocaleTimeString())}</p>${order.items.map(item => `<p>${item.quantity} × ${esc(local(item, 'product_name'))}<br>${item.options.map(option => esc(local(option, 'name'))).join(', ')}</p>`).join('')}${order.notes ? `<p class="notice">${esc(order.notes)}</p>` : ''}<div class="actions">${index >= 0 ? `<button class="primary small" data-status="${next}" data-order="${order.id}">${tr(buttons[index])}</button>` : `<span class="badge">${tr('Ready for pickup')}</span>`}${index >= 0 && index < 2 ? `<button class="small danger" data-status="CANCELLED" data-order="${order.id}">${tr('Cancel')}</button>` : ''}</div></article>`;
+      return `<article class="order-card"><h4>${esc(receiptNumber(order))}</h4><span class="badge">${tr(order.fulfillment_type === 'PICKUP' ? 'Pickup' : 'Delivery')}</span><p>${esc(order.customer_name)} · ${esc(new Date(order.created_at).toLocaleTimeString())}</p>${order.items.map(item => `<p>${item.quantity} × ${esc(local(item, 'product_name'))}<br>${item.options.map(option => esc(local(option, 'name'))).join(', ')}</p>`).join('')}${order.notes ? `<p class="notice">${esc(order.notes)}</p>` : ''}<div class="actions">${order.fulfillment_type === 'PICKUP' && order.status === 'READY' ? `<button class="primary small" data-collect="${order.id}">${tr('Confirm payment and collection')}</button>` : ''}${index >= 0 ? `<button class="primary small" data-status="${next}" data-order="${order.id}">${tr(buttons[index])}</button>` : `<span class="badge">${tr('Ready for pickup')}</span>`}${index >= 0 && index < 2 ? `<button class="small danger" data-status="CANCELLED" data-order="${order.id}">${tr('Cancel')}</button>` : ''}</div></article>`;
     };
     const view = page('Kitchen');
     view.closest('.page').classList.add('kitchen-page');
@@ -28,6 +28,10 @@ export default function createPage(ctx) {
     view.querySelectorAll('[data-kitchen-state]').forEach(button => button.addEventListener('click',async()=>{
       try { await busy(button,async()=>{ctx.kitchenPages[button.dataset.kitchenState]=Number(button.dataset.page);await kitchen();}); }
       catch(error){toast(error.message);}
+    }));
+    view.querySelectorAll('[data-collect]').forEach(button => button.addEventListener('click', async () => {
+      if (!confirm(tr('Confirm payment received and order collected?'))) return;
+      try { await busy(button, () => api('/api/kitchen/orders/' + button.dataset.collect + '/collect', {method:'PATCH',body:{paid:true}})); await kitchen(); } catch(error) { toast(error.message); }
     }));
     bind('#sound', 'click', () => {
       ctx.soundContext ||= new (window.AudioContext || window.webkitAudioContext)();

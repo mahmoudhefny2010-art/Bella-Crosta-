@@ -67,7 +67,7 @@ router.delete('/addresses/:id', auth, async (req, res) => {
   });
   res.json({ ok: true });
 });
-const createSchema = z.object({ idempotencyKey: uuid.optional(), customerName: text(160), fulfillmentType: z.enum(['DELIVERY', 'PICKUP']).default('DELIVERY'), paymentMethod: z.enum(['CASH_ON_DELIVERY', 'INSTAPAY_ON_DELIVERY', 'PAY_AT_CASHIER']).default('CASH_ON_DELIVERY'), addressId: uuid.optional(), address: addressSchema.optional(), notes: optionalText(1000), items: z.array(z.object({ productId: uuid, quantity: z.number().int().min(1).max(20), optionIds: z.array(uuid).max(30).default([]), custom: z.boolean().default(false) }).strict()).min(1).max(30) }).strict().refine(v => v.fulfillmentType === 'PICKUP' || Boolean(v.addressId || v.address), { message: 'Address is required for delivery.' }).refine(v => v.fulfillmentType !== 'PICKUP' || v.paymentMethod === 'PAY_AT_CASHIER', { message: 'Pickup orders must pay at cashier.' });
+const createSchema = z.object({ idempotencyKey: uuid.optional(), customerName: text(160), fulfillmentType: z.enum(['DELIVERY', 'PICKUP']).default('DELIVERY'), paymentMethod: z.enum(['CASH_ON_DELIVERY', 'INSTAPAY_ON_DELIVERY', 'PAY_AT_CASHIER']).default('CASH_ON_DELIVERY'), addressId: uuid.optional(), address: addressSchema.optional(), notes: optionalText(1000), items: z.array(z.object({ productId: uuid, quantity: z.number().int().min(1).max(20), optionIds: z.array(uuid).max(30).default([]), custom: z.boolean().default(false) }).strict()).min(1).max(30) }).strict().refine(v => v.fulfillmentType === 'PICKUP' || Boolean(v.addressId || v.address), { message: 'Address is required for delivery.' }).refine(v => v.fulfillmentType !== 'PICKUP' || v.paymentMethod === 'PAY_AT_CASHIER', { message: 'Pickup orders must pay at cashier.' }).refine(v => v.fulfillmentType !== 'DELIVERY' || v.paymentMethod !== 'PAY_AT_CASHIER', { message: 'Choose a delivery payment method.' });
 router.post('/orders', auth, rateLimit({ windowMs: 60000, limit: 8 }), body(createSchema), async (req, res) => res.status(201).json({ order: await orders.create(req.currentUser, req.input) }));
 router.get('/orders/mine', auth, async (req, res) => res.json({ orders: await db('orders').where({ user_id: req.currentUser.id }).orderBy('created_at', 'desc').limit(100) }));
 router.get('/orders/reorder', auth, async (req, res) => {
@@ -129,10 +129,11 @@ router.get('/kitchen/orders', roles('kitchen', 'admin'), async (req, res) => {
   const lists = await Promise.all(states.map(state=>db('orders').where({status:state}).orderBy('created_at').orderBy('id').offset((pages[state]-1)*limit).limit(limit)));
   res.json({orders:await orders.queueDetails(lists.flat()),totals,pages,limit});
 });
+router.patch('/kitchen/orders/:id/collect', roles('kitchen', 'admin'), body(z.object({ paid: z.literal(true) }).strict()), async (req, res) => res.json({ order: await orders.collect(req.params.id, req.currentUser) }));
 router.patch('/kitchen/orders/:id/status', roles('kitchen', 'admin'), body(z.object({ status: z.enum(['ACCEPTED', 'PREPARING', 'READY', 'CANCELLED']) }).strict()), async (req, res) => res.json({ order: await orders.transition(req.params.id, req.input.status, req.currentUser) }));
 router.get('/delivery/orders', roles('driver'), async (req, res) => {
   const input = z.object({ scope:z.enum(['all','mine','history']).default('all'), page:z.coerce.number().int().min(1).max(100000).default(1) }).strict().parse(req.query);
-  const query = db('orders');
+  const query = db('orders').where({fulfillment_type:'DELIVERY'});
   if (input.scope !== 'all') query.where({assigned_driver_id:req.currentUser.id});
   if (input.scope === 'history') query.whereIn('status',['DELIVERED','CANCELLED']);
   else query.whereNotIn('status',['DELIVERED','CANCELLED']);

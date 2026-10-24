@@ -9,3 +9,4 @@ fs.cpSync(path.join(leaflet,'images'),'public/vendor/leaflet/images',{recursive:
 fs.copyFileSync(path.join(path.dirname(require.resolve('html5-qrcode/package.json')),'html5-qrcode.min.js'),'public/vendor/html5-qrcode.js');
 fs.copyFileSync(path.join(path.dirname(require.resolve('socket.io-client/package.json')),'dist/socket.io.min.js'),'public/vendor/socket.io.min.js');
 console.log('Browser vendor assets prepared. No database writes or seeds run during builds.');
+console.log('PWA release:', require('./pwa-release.cjs').stamp(path.resolve('public')));

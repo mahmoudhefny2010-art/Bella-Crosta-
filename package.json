@@ -9,7 +9,7 @@
     "start": "node server/app.js",
     "seed": "knex seed:run --knexfile server/db/knexfile.js",
     "admin:create": "node scripts/admin.cjs",
-    "test": "node --test tests/workflow.test.cjs tests/google-errors.test.cjs tests/website-content.test.cjs tests/pwa-pickup.test.cjs",
+    "test": "node --test tests/workflow.test.cjs tests/google-errors.test.cjs tests/website-content.test.cjs tests/pwa-pickup.test.cjs tests/pwa-updates.test.cjs",
     "test:admin-owner": "node tests/admin-owner.integration.cjs",
     "test:integration": "node tests/integration.cjs",
     "test:browser": "node tests/browser.cjs",
@@ -22,7 +22,9 @@
     "dev:sqlserver": "node scripts/sqlserver-dev.cjs",
     "db:neon:import": "node scripts/migrate-to-neon.cjs",
     "test:pickup-ui": "node tests/pickup-ui.cjs",
-    "test:pickup": "node tests/pickup.integration.cjs"
+    "test:pickup": "node tests/pickup.integration.cjs",
+    "test:mobile-account": "node tests/mobile-account.cjs",
+    "test:pwa-updates": "node tests/pwa-updates.browser.cjs"
   },
   "keywords": [
     "pizza",

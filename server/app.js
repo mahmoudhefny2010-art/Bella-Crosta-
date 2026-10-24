@@ -65,6 +65,7 @@ app.get('/manifest.json', async (req,res) => {
   if (content.customized.includes('asset.logo')) manifest.icons = [{ src:content.settings['asset.logo'].en, sizes:'any', purpose:'any' }];
   res.set('Cache-Control','no-store').json(manifest);
 });
+app.use(['/sw.js', '/js/pwa-updates.js'], (req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
 app.use(express.static(publicDir, { index: false, dotfiles: 'deny' }));
 for (const route of ['/', '/menu', '/builder', '/cart', '/checkout', '/track', '/orders', '/addresses', '/login', '/kitchen', '/delivery', '/admin', '/owner']) {
   app.get(route, (req, res) => {

@@ -3,12 +3,14 @@ const {createPayment}=require('../server/services/payments');
 test('Cashier payment is available for pickup orders',async()=>{assert.deepEqual(await createPayment({payment_method:'PAY_AT_CASHIER',total_egp:300}),{method:'PAY_AT_CASHIER',amount:300,currency:'EGP',status:'DUE_AT_CASHIER'});});
 test('PWA installs its offline shell when push CDN is unavailable',async()=>{
  const handlers={};let assets=[];let claimed=false;
- const sandbox={importScripts(){throw new Error('Offline');},console:{warn(){}},URL,
+ const sandbox={importScripts(){throw new Error('Offline');},console:{warn(){}},URL,Request,
   self:{location:{origin:'https://example.test'},addEventListener:(name,fn)=>handlers[name]=fn,skipWaiting:async()=>{},clients:{claim:async()=>{claimed=true;}}},
   caches:{open:async()=>({addAll:async list=>{assets=list;}}),keys:async()=>[],delete:async()=>true,match:async()=>({offline:true})},fetch:async()=>{throw new Error('Offline');}};
  vm.runInNewContext(fs.readFileSync(path.join(__dirname,'../public/sw.js'),'utf8'),sandbox);
  let work;handlers.install({waitUntil:p=>work=p});await work;
- assert.ok(assets.includes('/offline.html'));for(const asset of assets)assert.ok(fs.existsSync(path.join(__dirname,'../public',asset)),asset);
+ const paths=assets.map(request=>new URL(request.url).pathname);
+ assert.ok(paths.includes('/offline.html'));for(const asset of paths)assert.ok(fs.existsSync(path.join(__dirname,'../public',asset)),asset);
+ assert.ok(assets.every(request=>request.cache==='reload'));
  handlers.activate({waitUntil:p=>work=p});await work;assert.equal(claimed,true);
  handlers.fetch({request:{url:'https://example.test/checkout',method:'GET',mode:'navigate'},respondWith:p=>work=p});assert.deepEqual(await work,{offline:true});
  let intercepted=false;handlers.fetch({request:{url:'https://example.test/api/orders',method:'GET'},respondWith:()=>intercepted=true});assert.equal(intercepted,false);

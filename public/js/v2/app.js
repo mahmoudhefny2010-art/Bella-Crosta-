@@ -62,10 +62,13 @@ function arrangeHeaderTools() {
   const nav = $('#navigation'), actions = $('.header-actions'), bag = $('#cart-link'), toggle = $('#mobile-nav');
   const tools = ['#theme-toggle', '#language', '#signin-link', '#account-menu'].map($);
   if (matchMedia('(max-width: 860px)').matches) {
+    // Keep the fixed account panel outside the clipped, scrolling navigation.
+    document.body.append($('#account-popover'));
     let mobileTools = nav.querySelector('.mobile-nav-tools');
     if (!mobileTools) { mobileTools = document.createElement('div'); mobileTools.className = 'mobile-nav-tools'; mobileTools.setAttribute('aria-label', t('Menu')); nav.append(mobileTools); }
     tools.forEach(el => mobileTools.append(el));
   } else {
+    $('#account-menu').append($('#account-popover'));
     tools.slice(0, 2).forEach(el => actions.insertBefore(el, bag));
     tools.slice(2).forEach(el => actions.insertBefore(el, toggle));
     nav.querySelector('.mobile-nav-tools')?.remove();
@@ -86,6 +89,9 @@ function renderNav() {
   if (user && siteEnabled('header.show_orders')) nav += routeLink('/orders', 'Orders');
   if (user && siteEnabled('header.show_addresses')) nav += routeLink('/addresses', 'Addresses');
   for (const link of siteList('header.extra_links').filter(link => link.visible)) nav += `<a href="${esc(link.href)}" class="${path === link.href ? 'active' : ''}">${esc(language === 'ar' ? link.label_ar || link.label_en : link.label_en)}</a>`;
+  // Preserve the controls when roles change while the mobile menu is mounted.
+  const mobileTools = $('#navigation .mobile-nav-tools');
+  if (mobileTools) $('.header-actions').append(...mobileTools.children);
   $('#navigation').innerHTML = nav;
   arrangeHeaderTools();
   const signInLink = $('#signin-link');
@@ -407,15 +413,21 @@ function scheduleLiveRefresh() {
 document.addEventListener('visibilitychange',()=>{if(!document.hidden && liveRefreshPending)scheduleLiveRefresh();});
 document.addEventListener('focus',()=>{if(!document.hidden && liveRefreshPending)scheduleLiveRefresh();});
 
-let touchStartY = 0, touchPulling = false;
+let touchStartY = 0, touchPulling = false, touchRefreshAllowed = false;
 const refreshIndicator = document.createElement('div');
 refreshIndicator.id = 'pull-to-refresh';
 refreshIndicator.innerHTML = '<div class="refresh-spinner"></div><span class="refresh-text">Refreshing...</span>';
 refreshIndicator.hidden = true;
 document.body.insertBefore(refreshIndicator, document.body.firstChild);
-document.addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; touchPulling = false; }, { passive: true });
+document.addEventListener('touchstart', e => {
+  touchStartY = e.touches[0].clientY;
+  touchPulling = false;
+  touchRefreshAllowed = e.touches.length === 1 && window.scrollY <= 0 &&
+    !e.target.closest('.header, #account-popover, .map, input, textarea, select, button, a, dialog') &&
+    !$('#navigation').classList.contains('open') && $('#account-popover').hidden;
+}, { passive: true });
 document.addEventListener('touchmove', e => {
-  if (window.scrollY <= 0) {
+  if (touchRefreshAllowed && e.touches.length === 1 && window.scrollY <= 0) {
     const pull = e.touches[0].clientY - touchStartY;
     if (pull > 30) {
       touchPulling = true;
@@ -437,7 +449,14 @@ document.addEventListener('touchend', async e => {
     refreshIndicator.style.transform = 'translateY(0)';
   }
   touchPulling = false;
+  touchRefreshAllowed = false;
 });
+document.addEventListener('touchcancel', () => {
+  touchPulling = false;
+  touchRefreshAllowed = false;
+  refreshIndicator.hidden = true;
+  refreshIndicator.querySelector('.refresh-spinner').classList.remove('spin');
+}, { passive: true });
 async function init() {
   const data = await Promise.all([api('/api/menu'), api('/api/me'), api('/api/config'), api('/api/content').catch(() => null)]);
   products = data[0].products; user = data[1].user; config = data[2];
@@ -472,6 +491,32 @@ document.addEventListener('click', e => {
   location.href = '/builder?base=' + encodeURIComponent(button.dataset.customize);
 });
 bind('#language', 'click', () => setLanguage(language === 'en' ? 'ar' : 'en'));
+// A scroll gesture must not activate the link/button beneath the released finger.
+let accountPointer, accountGestureMoved = false, accountSuppressClickUntil = 0;
+document.addEventListener('pointerdown', e => {
+  if (!e.target.closest('#account-popover')) return;
+  accountPointer = { id: e.pointerId, x: e.clientX, y: e.clientY };
+  accountGestureMoved = false;
+  accountSuppressClickUntil = 0;
+}, { passive: true });
+document.addEventListener('pointermove', e => {
+  if (accountPointer?.id !== e.pointerId) return;
+  if (Math.hypot(e.clientX - accountPointer.x, e.clientY - accountPointer.y) > 10) accountGestureMoved = true;
+}, { passive: true });
+function endAccountGesture(e) {
+  if (accountPointer?.id !== e.pointerId) return;
+  if (accountGestureMoved || e.type === 'pointercancel') accountSuppressClickUntil = performance.now() + 800;
+  accountPointer = undefined;
+}
+document.addEventListener('pointerup', endAccountGesture, { passive: true });
+document.addEventListener('pointercancel', endAccountGesture, { passive: true });
+document.addEventListener('click', e => {
+  if (e.detail !== 0 && e.target.closest('#account-popover') &&
+      (accountGestureMoved || performance.now() < accountSuppressClickUntil)) {
+    e.preventDefault();
+    e.stopImmediatePropagation();
+  }
+}, true);
 bind('#account-toggle', 'click', () => {
   const toggle = $('#account-toggle'), popover = $('#account-popover');
   const open = toggle.getAttribute('aria-expanded') !== 'true';
@@ -511,7 +556,7 @@ document.addEventListener('click', async e => {
     try { if (pushSdk) await pushSdk.logout(); } finally { await api('/auth/logout', { method: 'POST' }); location.href = '/'; }
     return;
   }
-  if (!e.target.closest('#account-menu')) {
+  if (!e.target.closest('#account-menu, #account-popover')) {
     const toggle = $('#account-toggle'), popover = $('#account-popover');
     if (toggle && popover) { toggle.setAttribute('aria-expanded', 'false'); popover.hidden = true; }
   }
@@ -524,7 +569,7 @@ document.addEventListener('keydown', e => {
   if (accountToggle?.getAttribute('aria-expanded') === 'true') { accountToggle.setAttribute('aria-expanded', 'false'); accountPopover.hidden = true; accountToggle.focus(); }
   if ($('#navigation').classList.contains('open')) { $('#navigation').classList.remove('open'); $('#mobile-nav').setAttribute('aria-expanded', 'false'); $('#mobile-nav').focus(); }
 });
-document.addEventListener('click', e => { if ($('#navigation').classList.contains('open') && (!e.target.closest('.header') || (e.target.closest('.mobile-nav-tools') && !e.target.closest('#account-menu')))) { $('#navigation').classList.remove('open'); $('#mobile-nav').setAttribute('aria-expanded', 'false'); } });
+document.addEventListener('click', e => { if ($('#navigation').classList.contains('open') && !e.target.closest('#account-popover') && (!e.target.closest('.header') || (e.target.closest('.mobile-nav-tools') && !e.target.closest('#account-menu')))) { $('#navigation').classList.remove('open'); $('#mobile-nav').setAttribute('aria-expanded', 'false'); } });
 window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installPrompt = e; $('#install').hidden = false; });
 window.addEventListener('appinstalled', () => {
   localStorage.setItem('bella_app_installed', '1'); installPrompt = null; $('#install').hidden = true;
@@ -596,6 +641,5 @@ bind('#install', 'click', async () => {
   await prompt.prompt(); await prompt.userChoice;
   $('#install').hidden = true;
 });
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 window.addEventListener('pagehide', () => { clearInterval(gpsTimer); if (scanner) scanner.stop().catch(() => {}); });
 init().catch(error => { hideLoadingScreen(); page('Something went wrong.').innerHTML = `<p class="error">${esc(navigator.onLine ? error.message : t('You are offline.'))}</p><button id="retry">${tr('Try again')}</button>`; bind('#retry', 'click', () => location.reload()); });

@@ -6,6 +6,7 @@
   "outputDirectory": "public",
   "functions": {"api/index.js": {"maxDuration": 60, "includeFiles": "{server/**,public/**}"}},
   "routes": [
+    {"src": "/(?:sw\\.js|js/pwa-updates\\.js)", "headers": {"Cache-Control": "no-store"}, "continue": true},
     {"src": "/manifest.json", "dest": "/api/index"},
     {"src": "/api/.*", "dest": "/api/index"},
     {"src": "/auth/.*", "dest": "/api/index"},
